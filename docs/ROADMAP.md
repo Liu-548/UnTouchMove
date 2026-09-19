@@ -9,13 +9,14 @@ trong SPEC §6 bằng số đo thật từ tay của chính chủ dự án.
 
 ## Phase 0 — Dựng khung (nửa ngày)
 
-- [ ] Tạo project Gradle, Kotlin, Compose, minSdk 29 / targetSdk 36
-- [ ] Thêm CameraX + MediaPipe Tasks Vision, tải `hand_landmarker.task` vào `assets/`
-- [ ] Manifest: quyền camera, foreground service type camera, KHÔNG có INTERNET
-- [ ] `.gitignore`, `LICENSE`, `README.md`
-- [ ] Build chạy được, hiện preview camera trước
+- [x] Tạo project Gradle, Kotlin, Compose, minSdk 29 / targetSdk 36
+- [x] Thêm CameraX + MediaPipe Tasks Vision, tải `hand_landmarker.task` vào `assets/`
+- [x] Manifest: quyền camera, foreground service type camera, KHÔNG có INTERNET
+- [x] `.gitignore`, `LICENSE`, `README.md`
+- [x] Build chạy được (`./gradlew assembleDebug` thành công), hiện preview camera trước
 
-**Xong khi**: cài lên GT Neo 2, thấy khung hình camera trước.
+**Xong khi**: cài lên GT Neo 2, thấy khung hình camera trước. **Cần test thủ công
+trên máy thật** — xem báo cáo cuối phiên.
 
 ## Phase 1 — Công cụ đo (quan trọng nhất, đừng bỏ qua)
 

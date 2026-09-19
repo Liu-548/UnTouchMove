@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">UnTouchMove</string>
+    <string name="camera_permission_rationale">Cần quyền camera để xem trước và nhận diện cử chỉ tay.</string>
+</resources>

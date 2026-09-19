@@ -61,4 +61,6 @@ dependencies {
     implementation("com.google.mediapipe:tasks-vision:0.10.14")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    testImplementation("junit:junit:4.13.2")
 }

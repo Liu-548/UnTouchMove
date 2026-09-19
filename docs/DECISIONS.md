@@ -60,6 +60,34 @@ trong `gradle.properties`. Build thực tế vẫn ra APK bình thường. Cân 
 AGP khi có bản ổn định hỗ trợ chính thức compileSdk 36 mà không đổi mô hình
 Kotlin plugin.
 
+## 2026-09-20 — Lật gương xử lý bằng ma trận bitmap trong HandLandmarkerHelper
+**Chọn**: trước khi đưa khung hình vào HandLandmarker, xoay theo
+`rotationDegrees` rồi lật ngang (`postScale(-1f, 1f, ...)`) bằng `Matrix` trên
+Bitmap, ngay trong `HandLandmarkerHelper.detectAsync`.
+**Vì**: đây là cách làm chuẩn của mẫu chính thức MediaPipe cho Android, xử lý
+đúng một chỗ duy nhất (ARCHITECTURE mục 6) — mọi landmark (normalized lẫn
+world) trả ra sau đó đã nhất quán với những gì người dùng thấy trên preview.
+**Đã loại**: lật toạ độ landmark sau khi suy luận (dễ rải rác, dễ quên áp dụng
+cho world landmarks lẫn normalized landmarks).
+
+## 2026-09-20 — Delegate CPU cho HandLandmarker ở Phase 1
+**Chọn**: `Delegate.CPU` thay vì GPU khi khởi tạo HandLandmarker.
+**Vì**: chưa có máy thật để kiểm chứng GPU delegate ổn định trên GT Neo 2 / GT
+8 Pro; CPU chạy được mọi nơi, ưu tiên đo đạc đúng số liệu hơn là fps cao ở
+Phase 1. Đánh dấu `ponytail:` trong code, nâng cấp khi cần thêm fps.
+**Đã loại**: GPU delegate ngay từ đầu (rủi ro crash không kiểm chứng được).
+
+## 2026-09-20 — Xuất file CSV qua share sheet (FileProvider)
+**Chọn**: file log ghi vào `filesDir/logs/` (bộ nhớ riêng của app, đúng yêu
+cầu ROADMAP), kèm nút "Chia sẻ file mới nhất" dùng `FileProvider` +
+`Intent.ACTION_SEND` để đưa file CSV ra khỏi máy.
+**Vì**: bộ nhớ riêng của app không thể lấy ra qua trình quản lý file thông
+thường; nếu không có cách xuất, bước "vẽ phân bố, chọn ngưỡng" của Phase 1 sẽ
+bị kẹt (phải bật USB debugging + adb pull, quá phức tạp cho người không viết
+code). `FileProvider` là AndroidX core có sẵn, không thêm dependency mới.
+**Đã loại**: lưu vào bộ nhớ ngoài (external storage) — không cần thiết, và
+vi phạm tinh thần "không lưu khung hình/log ra ngoài" nếu không kiểm soát rõ.
+
 ## 2026-09-19 — Tải sẵn hand_landmarker.task vào assets lúc dựng khung
 **Chọn**: tải model MediaPipe HandLandmarker (float16) trực tiếp từ
 `storage.googleapis.com/mediapipe-models` vào `app/src/main/assets/` ngay ở

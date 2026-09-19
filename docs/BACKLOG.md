@@ -44,6 +44,16 @@ Người dùng tự đổi "vẩy trái = gì". Hay, nhưng cần UI phức tạ
   nội dung màn hình — đi ngược nguyên tắc riêng tư ở CLAUDE.md §4.6. Cân nhắc kỹ.
 - **Bộ phân loại TFLite nhỏ** thay cho ngưỡng thủ công, nếu Phase 1 cho thấy các
   cụm đặc trưng chồng lấn nhiều.
+- **Công thức đo ngón cái (`t`) tách biệt kém**: dữ liệu Phase 1 (2026-09-20) cho
+  thấy `t = dist(đầu cái, gốc trỏ)/S` chỉ tách được tư thế khép (M1, t≈0.43-0.53)
+  và xòe hết cỡ (M2, t≈0.62-0.75) một khoảng ~0.1 — hẹp hơn nhiều so với `r`
+  (~0.4). Lý do: ngón cái xoay ở khớp gốc theo 2 trục (kiểu yên ngựa) chứ không
+  gập một mặt phẳng như 4 ngón kia, nên phần chuyển động chính khi "xòe" lại rơi
+  vào trục chiều sâu (z) — trục camera đơn ước lượng kém chính xác nhất. **Tạm
+  thời chấp nhận ngưỡng đo được** (`T_OUT=0.62`, `T_IN=0.45`, xem
+  `DECISIONS.md`), dùng thử thật trên máy trước. Nếu thực tế M1/M2 hay bị lẫn,
+  nghiên cứu lại công thức (đo góc thay vì khoảng cách, hoặc dùng riêng trục
+  ngang thay vì khoảng cách 3D) thay vì chỉnh ngưỡng.
 - **Lướt liên tục theo quãng đường tay** (kiểu touchpad) thay vì vẩy từng cú.
   Có thể mượt hơn cho việc đọc bài dài.
 - **Hiệu chuẩn cá nhân một lần**: bảo người dùng làm từng tư thế một lần lúc cài

@@ -97,3 +97,31 @@ Phase 0, đóng gói trong APK.
 vi phạm ràng buộc "không xin quyền INTERNET" ở CLAUDE.md mục 4.1.
 **Đã loại**: để trống, tải thủ công sau — sẽ chặn Phase 1 (DebugActivity cần
 model để chạy HandLandmarker).
+
+## 2026-09-20 — Ngưỡng thật thay cho phỏng đoán trong GestureThresholds.kt
+**Chọn**: ghi 140 lần (6 tư thế SPEC × 20 lần, cộng 20 lần ghi lại riêng cho
+M2 với ngón cái xòe cố tình xa hơn) trên RMX3370 (GT Neo 2), qua DebugActivity.
+Từ ~6900 dòng dữ liệu, chọn ngưỡng nằm giữa khoảng trống percentile 10/90 của
+từng cặp tư thế đối lập:
+- `R_UP=0.90`, `R_DOWN=0.65` (dựng đo được p10=0.92, gập p90=0.54) — đoán ban
+  đầu 1.6/1.1 sai hoàn toàn, ngón dựng thật không bao giờ vượt 1.4.
+- `G_CLOSE=1.3`, `G_OPEN=1.85` (khép p90=1.30, tách p10=1.88) — gần khớp đoán
+  ban đầu.
+- `G_OPEN4=2.0` (M5 gmax p10=2.17) — nâng nhẹ so với đoán 1.7 để chắc hơn.
+- `T_OUT=0.62`, `T_IN=0.45` (M1-khép p10-p90=0.43-0.53, M2-xòe hết cỡ
+  p10-p90=0.62-0.75) — đoán ban đầu 1.1 không bao giờ đạt tới trong 140 lần đo.
+**Vì**: SPEC mục 6 ghi rõ các con số ban đầu là phỏng đoán, ROADMAP Phase 1 yêu
+cầu thay bằng số đo thật trước khi tin dùng.
+**Đã loại**: giữ nguyên đoán ban đầu (sẽ khiến M1/M2/M5 gần như không bao giờ
+kích hoạt được, đã xác nhận qua dữ liệu thật — ngón dựng chỉ đạt ~0.85-1.4,
+không bao giờ chạm ngưỡng đoán 1.6).
+**Rủi ro chưa giải quyết**: `t` (ngón cái) tách biệt kém hơn hẳn `r` và `g_bc`
+— khoảng cách giữa cụm khép và cụm xòe chỉ ~0.1 (so với `r` cách nhau ~0.4).
+Đã thử ghi lại với ngón cái xòe cố tình xa hơn (`M2_retry`, t p10-p90=
+0.62-0.75) nhưng người dùng báo "không thể xòe thêm" — đây có thể là giới hạn
+sinh lý của khớp ngón cái, không phải do đo sai. Nếu thực tế dùng bị lẫn M1/M2,
+xem `BACKLOG.md` mục "bộ phân loại TFLite nhỏ" (đã lường trước ở SPEC mục 8).
+**Ghi chú**: các hằng số vận tốc/thời gian (`SWIPE_VEL_MIN`, `ARM_HOLD_MS`,
+`HOLD_MAX_MS`, ...) chưa đo được ở Phase 1 vì cần chuyển động thật (vẫy tay,
+giữ/nhả), không phải tư thế tĩnh — giữ nguyên giá trị phỏng đoán của SPEC, để
+đo ở Phase 2/3 khi có cử chỉ thật chạy qua AccessibilityService.

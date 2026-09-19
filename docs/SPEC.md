@@ -178,33 +178,42 @@ M3 và M4 **không cần arming** vì đã ở sẵn trong M2.
 
 ## 6. Bảng ngưỡng khởi điểm
 
-Toàn bộ nằm trong `gesture/GestureThresholds.kt`. **Đây là phỏng đoán**, phải đo
-lại bằng công cụ ở Phase 1 trước khi tin dùng.
+Toàn bộ nằm trong `gesture/GestureThresholds.kt`. `R_*`, `G_*`, `T_*` đã được đo
+thật ở Phase 1 (140 lần ghi trên RMX3370/GT Neo 2, xem `docs/DECISIONS.md` ngày
+2026-09-20). Các hằng số vận tốc/thời gian còn lại vẫn là phỏng đoán, chưa đo
+được vì cần chuyển động thật (Phase 2/3), không phải tư thế tĩnh.
 
-| Hằng số | Giá trị khởi điểm | Ghi chú |
+| Hằng số | Giá trị | Ghi chú |
 |---|---|---|
-| `R_UP` | 1.6 | ngón dựng |
-| `R_DOWN` | 1.1 | ngón gập |
-| `G_CLOSE` | 1.3 | hai ngón khép |
-| `G_OPEN` | 2.0 | hai ngón tách |
-| `G_OPEN4` | 1.7 | tư thế vào M5 (rời vừa phải) |
-| `T_OUT` | 1.1 | ngón cái xòe |
-| `T_IN` | 0.7 | ngón cái khép (dùng khi chưa có t0) |
-| `T_CLOSE_RATIO` | 0.6 | khép a = 60% của t0 |
-| `ARM_HOLD_MS` | 500 | thời gian giữ yên để kích hoạt |
-| `ARM_JITTER` | 0.15 | dịch chuyển cho phép khi arming (theo S) |
-| `CLICK_MAX_MS` | 300 | tách ngắn hơn = click, dài hơn = hold |
-| `CLICK_COOLDOWN` | 250ms | |
-| `SWIPE_VEL_MIN` | cần đo | vận tốc tối thiểu cho M1 |
-| `SYS_VEL_MIN` | ~1.5 × SWIPE_VEL_MIN | ngưỡng cho M5 |
-| `SWIPE_COOLDOWN` | 500ms | chống vuốt ngược |
-| `AXIS_RATIO` | 1.8 | trục chính phải trội hơn trục phụ |
-| `CURSOR_GAIN` | 2.0 | hệ số khuếch đại, cho chỉnh trong cài đặt |
-| `LOST_HAND_MS` | 300 | mất tay bao lâu thì coi là ra khỏi khung |
-| `HOLD_LOST_MS` | 300 | mất tay khi đang hold → nhả |
-| `HOLD_MAX_MS` | 15000 | hold tối đa tuyệt đối |
-| `EDGE_MARGIN` | 5% | tay chạm lề khung = coi như ra ngoài |
-| `CONF_MIN` | 0.6 | bỏ qua khung hình có độ tin cậy thấp |
+| `R_UP` | 0.90 | ngón dựng (đo thật; đoán ban đầu 1.6 sai hoàn toàn) |
+| `R_DOWN` | 0.65 | ngón gập (đo thật; đoán ban đầu 1.1 sai hoàn toàn) |
+| `G_CLOSE` | 1.3 | hai ngón khép (đo thật, khớp đoán ban đầu) |
+| `G_OPEN` | 1.85 | hai ngón tách (đo thật, hạ nhẹ so với đoán 2.0) |
+| `G_OPEN4` | 2.0 | tư thế vào M5 (đo thật, nâng so với đoán 1.7) |
+| `T_OUT` | 0.62 | ngón cái xòe (đo thật; đoán ban đầu 1.1 không bao giờ đạt tới) |
+| `T_IN` | 0.45 | ngón cái khép, dùng khi chưa có t0 (đo thật) |
+| `T_CLOSE_RATIO` | 0.6 | khép a = 60% của t0 (giữ nguyên đoán, mang tính tỷ lệ) |
+| `ARM_HOLD_MS` | 500 | thời gian giữ yên để kích hoạt — **chưa đo** |
+| `ARM_JITTER` | 0.15 | dịch chuyển cho phép khi arming (theo S) — **chưa đo** |
+| `CLICK_MAX_MS` | 300 | tách ngắn hơn = click, dài hơn = hold — **chưa đo** |
+| `CLICK_COOLDOWN` | 250ms | **chưa đo** |
+| `SWIPE_VEL_MIN` | cần đo | vận tốc tối thiểu cho M1 — **chưa đo, cần Phase 3** |
+| `SYS_VEL_MIN` | ~1.5 × SWIPE_VEL_MIN | ngưỡng cho M5 — **chưa đo** |
+| `SWIPE_COOLDOWN` | 500ms | chống vuốt ngược — **chưa đo** |
+| `AXIS_RATIO` | 1.8 | trục chính phải trội hơn trục phụ — **chưa đo** |
+| `CURSOR_GAIN` | 2.0 | hệ số khuếch đại, cho chỉnh trong cài đặt — **chưa đo** |
+| `LOST_HAND_MS` | 300 | mất tay bao lâu thì coi là ra khỏi khung — **chưa đo** |
+| `HOLD_LOST_MS` | 300 | mất tay khi đang hold → nhả — **chưa đo** |
+| `HOLD_MAX_MS` | 15000 | hold tối đa tuyệt đối — **chưa đo** |
+| `EDGE_MARGIN` | 5% | tay chạm lề khung = coi như ra ngoài — **chưa đo** |
+| `CONF_MIN` | 0.6 | bỏ qua khung hình có độ tin cậy thấp (giữ nguyên đoán, phù hợp dữ liệu đo được) |
+
+**Rủi ro đã biết từ dữ liệu thật**: ngón cái (`t`) không tách biệt rõ giữa tư thế
+khép (M1, t≈0.43–0.53) và xòe hết cỡ (M2, t≈0.62–0.75) — khoảng cách hẹp hơn
+nhiều so với các trục khác (`r`, `g_bc` tách biệt rất rõ). Đã thử ghi lại M2 với
+ngón cái xòe cố tình xa hơn nhưng không cải thiện được nhiều. Nếu thực tế dùng
+bị lẫn M1/M2, cân nhắc ghi vào `BACKLOG.md` để xem xét bộ phân loại riêng cho
+ngón cái, như mục 8 đã lường trước.
 
 ## 7. Giao diện app
 

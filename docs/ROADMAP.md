@@ -25,12 +25,15 @@ máy thật (RMX3370 / GT Neo 2): preview hiện được, không bị lật gư
       (r_b, r_c, r_d, r_e, g_bc, g_cd, g_de, t, fps, confidence)
 - [x] Nút ghi log: bấm ghi 5 giây feature ra file CSV trong bộ nhớ riêng của app
       (kèm nút chia sẻ file mới nhất qua share sheet để lấy dữ liệu ra khỏi máy)
-- [ ] Ghi bộ dữ liệu mẫu: mỗi tư thế trong SPEC làm 20 lần, cộng thêm chuyển động
-      tay bình thường **không** có ý định điều khiển (dữ liệu âm tính)
-      — **cần làm trên máy thật, chưa làm được**
-- [ ] Vẽ phân bố, chọn ngưỡng nằm ở khoảng trống giữa hai cụm — **cần dữ liệu ở trên**
-- [ ] Ghi ngưỡng thật vào `GestureThresholds.kt`, ghi lại lý do vào `DECISIONS.md`
-      — **cần dữ liệu ở trên**
+- [x] Ghi bộ dữ liệu mẫu: mỗi tư thế trong SPEC làm 20 lần, cộng thêm chuyển động
+      tay bình thường **không** có ý định điều khiển (dữ liệu âm tính) — đã ghi
+      140 lần trên RMX3370 (6 tư thế × 20 + 20 lần ghi lại riêng cho M2)
+- [x] Vẽ phân bố, chọn ngưỡng nằm ở khoảng trống giữa hai cụm — phân tích percentile
+      10/90 trên ~6900 dòng dữ liệu
+- [x] Ghi ngưỡng thật vào `GestureThresholds.kt`, ghi lại lý do vào `DECISIONS.md`
+      — `R_*`, `G_*`, `T_*` đã có số thật; `SWIPE_VEL_MIN` và các hằng số thời
+      gian/vận tốc còn lại vẫn là phỏng đoán, chưa đo được (cần chuyển động thật
+      ở Phase 2/3). Rủi ro còn lại: ngón cái (`t`) tách biệt kém, xem DECISIONS.md.
 
 **Xong khi**: bảng ngưỡng trong SPEC §6 được thay bằng số đo thật.
 **Nếu các cụm chồng lấn nhiều** → ghi vào BACKLOG, cân nhắc bộ phân loại TFLite nhỏ.

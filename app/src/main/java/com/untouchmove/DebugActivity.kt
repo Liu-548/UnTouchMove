@@ -105,11 +105,11 @@ private fun DebugScreen() {
 
                     if (isRecording && extracted != null) {
                         csvRows.add(csvRow(frame.timestampMs, extracted, frame.confidence))
-                        if (System.currentTimeMillis() >= recordStopAtMs) {
-                            lastSavedFile = writeCsv(context, csvRows)
-                            csvRows.clear()
-                            isRecording = false
-                        }
+                    }
+                    if (isRecording && System.currentTimeMillis() >= recordStopAtMs) {
+                        lastSavedFile = writeCsv(context, csvRows)
+                        csvRows.clear()
+                        isRecording = false
                     }
                 }
             },
@@ -118,6 +118,13 @@ private fun DebugScreen() {
                     features = null
                     skeletonPoints = emptyList()
                     confidence = 0f
+                    // mat tay giua luc dang ghi khong duoc de treo: van phai
+                    // chot file dung gio thay vi doi den khung hinh co tay tiep theo
+                    if (isRecording && System.currentTimeMillis() >= recordStopAtMs) {
+                        lastSavedFile = writeCsv(context, csvRows)
+                        csvRows.clear()
+                        isRecording = false
+                    }
                 }
             },
             onError = { /* TODO(untouch): hien loi ra UI neu can, tam bo qua cho don gian o Phase 1 */ },

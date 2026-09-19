@@ -43,12 +43,11 @@ máy thật (RMX3370 / GT Neo 2): preview hiện được, không bị lật gư
 - [x] `UnTouchAccessibilityService` + màn hình hướng dẫn bật trong Cài đặt
       (`GestureTestActivity`, kèm hướng dẫn "Allow restricted settings" Android 13+)
 - [x] Bơm thử bằng nút bấm tay (chưa có camera): vuốt 4 hướng, click một điểm,
-      drag, và 4 global action — đã test trên RMX3370: Back/Home/Đa nhiệm/Thanh
-      thông báo xác nhận đúng bằng mắt; vuốt/click/kéo xác nhận qua log (chạy
-      hết chuỗi, không crash), bạn tự bấm để cảm nhận độ mượt thật khi rảnh
-- [ ] Đo xem drag bằng `continueStroke` có mượt chấp nhận được không
-      — **cần bạn tự bấm "Kéo thử" và các nút vuốt trên máy, không đo qua ảnh
-      chụp được**
+      drag, và 4 global action — đã test trên RMX3370, chủ dự án xác nhận toàn
+      bộ hoạt động đúng (nút vuốt/click/kéo có trễ 2.5s để kịp chuyển sang màn
+      hình chủ/app khác quan sát, vì cử chỉ luôn bắn vào màn hình đang hiện)
+- [x] Đo xem drag bằng `continueStroke` có mượt chấp nhận được không — chủ dự
+      án xác nhận ổn qua "Kéo thử"
 
 **Xong khi**: bấm nút trong app thì hệ thống thật sự vuốt / click / back / home.
 **Đây là phase rủi ro kỹ thuật cao nhất — làm sớm để biết sớm.**

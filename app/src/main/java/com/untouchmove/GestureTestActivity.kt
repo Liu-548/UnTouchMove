@@ -2,7 +2,10 @@ package com.untouchmove
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
@@ -61,6 +64,11 @@ private fun GestureTestScreen() {
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text(if (connected) "Accessibility: Da bat" else "Accessibility: Chua bat")
+        Text(
+            "Nut vuot/click/keo se doi 2.5s roi moi ban - nhan xong ban chuyen " +
+                "ngay sang man hinh chu hoac app khac de thay tac dung. Back/Home/" +
+                "Da nhiem/Thong bao ban ngay luc bam."
+        )
         if (!connected) {
             Text(
                 "Neu cong tac bi mo trong xam khong bam duoc: vao Cai dat > Ung " +
@@ -89,17 +97,32 @@ private fun GestureTestScreen() {
     }
 }
 
+// Vuot/click/keo luon tac dong len man hinh DANG hien tai luc bam - ma chinh
+// man hinh test nay khong co gi de cuon/quan sat. Tre 2.5s + toast de nguoi
+// dung kip chuyen sang man hinh chu / app khac roi moi ban cu chi that ra do.
+private const val PRE_FIRE_DELAY_MS = 2500L
+
+private fun delayedAction(context: android.content.Context, action: () -> Unit): () -> Unit = {
+    Toast.makeText(
+        context,
+        "Chuyen sang man hinh muon thu trong ${PRE_FIRE_DELAY_MS / 1000}s...",
+        Toast.LENGTH_SHORT,
+    ).show()
+    Handler(Looper.getMainLooper()).postDelayed(action, PRE_FIRE_DELAY_MS)
+}
+
 private fun testButtons(context: android.content.Context): List<Pair<String, () -> Unit>> {
     val metrics = context.resources.displayMetrics
+    fun delayed(action: () -> Unit) = delayedAction(context, action)
     return listOf(
-        "Vuot len" to { ActionDispatcher.swipe(UnTouchAccessibilityService.SwipeDirection.UP) },
-        "Vuot xuong" to { ActionDispatcher.swipe(UnTouchAccessibilityService.SwipeDirection.DOWN) },
-        "Vuot trai" to { ActionDispatcher.swipe(UnTouchAccessibilityService.SwipeDirection.LEFT) },
-        "Vuot phai" to { ActionDispatcher.swipe(UnTouchAccessibilityService.SwipeDirection.RIGHT) },
-        "Click giua man hinh" to {
+        "Vuot len (tre 2.5s)" to delayed { ActionDispatcher.swipe(UnTouchAccessibilityService.SwipeDirection.UP) },
+        "Vuot xuong (tre 2.5s)" to delayed { ActionDispatcher.swipe(UnTouchAccessibilityService.SwipeDirection.DOWN) },
+        "Vuot trai (tre 2.5s)" to delayed { ActionDispatcher.swipe(UnTouchAccessibilityService.SwipeDirection.LEFT) },
+        "Vuot phai (tre 2.5s)" to delayed { ActionDispatcher.swipe(UnTouchAccessibilityService.SwipeDirection.RIGHT) },
+        "Click giua man hinh (tre 2.5s)" to delayed {
             ActionDispatcher.click(metrics.widthPixels / 2f, metrics.heightPixels / 2f)
         },
-        "Keo thu (trai->phai)" to { ActionDispatcher.testDrag() },
+        "Keo thu trai->phai (tre 2.5s)" to delayed { ActionDispatcher.testDrag() },
         "Back" to { ActionDispatcher.globalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK) },
         "Home" to { ActionDispatcher.globalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME) },
         "Da nhiem" to { ActionDispatcher.globalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_RECENTS) },

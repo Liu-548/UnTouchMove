@@ -1,0 +1,62 @@
+# BACKLOG — những gì cố ý hoãn
+
+Đã cân nhắc và quyết định **không làm ở bản đầu**. Đừng tự ý kéo lên làm sớm.
+
+---
+
+## Đã chốt hoãn
+
+### Chuyển chế độ giữa chừng
+Hiện tại muốn đổi từ M2 sang M1 phải hủy hoặc đưa tay ra khỏi khung rồi vào lại.
+Cho phép chuyển thẳng sẽ tiện hơn nhưng dễ gây nhấp nháy giữa hai chế độ khi ngón
+cái ở vùng mờ. Nếu làm: cần thời gian trễ khi chuyển và hysteresis chặt cho ngón cái.
+
+### Bản Windows dùng webcam
+Logic tính trên landmark đã chuẩn hóa nên **tái dùng được gần như nguyên vẹn**.
+Khác biệt cần xử lý: webcam có góc nhìn, khoảng cách và độ phân giải khác nên
+phải hiệu chuẩn lại toàn bộ ngưỡng; thay AccessibilityService bằng API chuột/bàn
+phím của Windows. Nên tách phần `gesture/` thành module dùng chung ngay từ đầu
+để sau này đỡ phải viết lại — nhưng **chỉ tách khi thực sự bắt đầu làm Windows**,
+đừng trừu tượng hóa sớm.
+
+### Chạy nền full-time / tự đánh thức
+Chủ dự án chỉ cần bật thủ công. Nếu sau này muốn: tham khảo cách dùng cảm biến
+tiệm cận và gia tốc để đánh thức camera, hạ fps, giới hạn khung giờ hoạt động.
+
+### Tự khởi động cùng máy
+Không làm. Android 14 còn chặn khởi động foreground service camera từ
+`BOOT_COMPLETED`.
+
+### Nhận diện hai tay
+`numHands = 1` cho tới khi có lý do rõ ràng. Hai tay làm tăng gấp đôi chi phí
+tính toán và mở ra cả một lớp nhập nhằng mới.
+
+### Tùy biến ánh xạ cử chỉ
+Người dùng tự đổi "vẩy trái = gì". Hay, nhưng cần UI phức tạp. Sau.
+
+---
+
+## Ý tưởng chưa quyết
+
+- **Hút con trỏ vào nút gần nhất** bằng cách đọc cây node của Accessibility rồi
+  `performAction` thay vì click theo tọa độ. Chính xác hơn nhiều với app thường,
+  nhưng vô dụng với game, WebView và trình phát video, đồng thời cần quyền đọc
+  nội dung màn hình — đi ngược nguyên tắc riêng tư ở CLAUDE.md §4.6. Cân nhắc kỹ.
+- **Bộ phân loại TFLite nhỏ** thay cho ngưỡng thủ công, nếu Phase 1 cho thấy các
+  cụm đặc trưng chồng lấn nhiều.
+- **Lướt liên tục theo quãng đường tay** (kiểu touchpad) thay vì vẩy từng cú.
+  Có thể mượt hơn cho việc đọc bài dài.
+- **Hiệu chuẩn cá nhân một lần**: bảo người dùng làm từng tư thế một lần lúc cài
+  đặt để tự sinh ngưỡng riêng, thay vì dùng ngưỡng cố định.
+- Chế độ tiết kiệm pin hạ fps khi tay đứng yên lâu.
+- Hỗ trợ SmartTV / Android TV.
+
+---
+
+## Đã loại bỏ
+
+- **Chụm ngón (pinch) để click** — đã thay bằng khép/tách, vì chụm làm đầu ngón
+  dịch chuyển đúng lúc click và kéo con trỏ lệch đi.
+- **Neo con trỏ vào đầu ngón trỏ** — cùng lý do trên, đã đổi sang tâm lòng bàn tay.
+- **Đo khép/tách bằng khoảng cách pixel thô** — phụ thuộc cỡ tay và khoảng cách
+  tới camera, đã đổi sang tỷ lệ chia cho khoảng cách hai khớp gốc.

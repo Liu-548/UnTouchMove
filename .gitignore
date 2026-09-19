@@ -1,0 +1,33 @@
+# Android / Gradle
+*.iml
+.gradle/
+local.properties
+.idea/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+output.json
+
+# Keystore — TUYỆT ĐỐI không commit
+*.jks
+*.keystore
+keystore.properties
+
+# Dữ liệu ghi từ màn hình Debug (có thể chứa thông tin cá nhân)
+/debug-logs/
+*.csv
+
+# Model MediaPipe — bỏ dòng dưới nếu muốn commit kèm model
+# app/src/main/assets/hand_landmarker.task
+
+# Hệ điều hành
+.DS_Store
+Thumbs.db
+
+# Graphify cache (tool sinh ra, không phải source)
+graphify-out/

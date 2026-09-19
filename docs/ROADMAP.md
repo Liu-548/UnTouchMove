@@ -15,8 +15,8 @@ trong SPEC §6 bằng số đo thật từ tay của chính chủ dự án.
 - [x] `.gitignore`, `LICENSE`, `README.md`
 - [x] Build chạy được (`./gradlew assembleDebug` thành công), hiện preview camera trước
 
-**Xong khi**: cài lên GT Neo 2, thấy khung hình camera trước. **Cần test thủ công
-trên máy thật** — xem báo cáo cuối phiên.
+**Xong khi**: cài lên GT Neo 2, thấy khung hình camera trước. ✅ Đã test trên
+máy thật (RMX3370 / GT Neo 2): preview hiện được, không bị lật gương.
 
 ## Phase 1 — Công cụ đo (quan trọng nhất, đừng bỏ qua)
 

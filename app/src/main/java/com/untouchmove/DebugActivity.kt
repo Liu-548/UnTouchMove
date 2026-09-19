@@ -113,6 +113,13 @@ private fun DebugScreen() {
                     }
                 }
             },
+            onHandLost = {
+                mainHandler.post {
+                    features = null
+                    skeletonPoints = emptyList()
+                    confidence = 0f
+                }
+            },
             onError = { /* TODO(untouch): hien loi ra UI neu can, tam bo qua cho don gian o Phase 1 */ },
         )
     }

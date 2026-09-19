@@ -23,6 +23,7 @@ import com.untouchmove.gesture.Point3D
 class HandLandmarkerHelper(
     context: Context,
     private val onResult: (frame: HandFrame, normalizedLandmarks: List<Point3D>, inferenceMs: Long) -> Unit,
+    private val onHandLost: () -> Unit,
     private val onError: (String) -> Unit,
 ) {
     private var lastInferenceStartMs = 0L
@@ -68,7 +69,10 @@ class HandLandmarkerHelper(
     private fun handleResult(result: HandLandmarkerResult) {
         val worldHands = result.worldLandmarks()
         val normalizedHands = result.landmarks()
-        if (worldHands.isEmpty() || normalizedHands.isEmpty()) return
+        if (worldHands.isEmpty() || normalizedHands.isEmpty()) {
+            onHandLost()
+            return
+        }
 
         val world = worldHands[0].map { Point3D(it.x(), it.y(), it.z()) }
         val normalized = normalizedHands[0].map { Point3D(it.x(), it.y(), it.z()) }

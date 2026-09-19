@@ -11,7 +11,9 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -71,11 +73,16 @@ private fun CameraPermissionGate() {
     if (hasPermission) {
         Box(modifier = Modifier.fillMaxSize()) {
             FrontCameraPreview()
-            Button(
-                onClick = { context.startActivity(Intent(context, DebugActivity::class.java)) },
+            Column(
                 modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("Man hinh Debug (Phase 1)")
+                Button(onClick = { context.startActivity(Intent(context, DebugActivity::class.java)) }) {
+                    Text("Man hinh Debug (Phase 1)")
+                }
+                Button(onClick = { context.startActivity(Intent(context, GestureTestActivity::class.java)) }) {
+                    Text("Bom thu cu chi (Phase 2)")
+                }
             }
         }
     } else {

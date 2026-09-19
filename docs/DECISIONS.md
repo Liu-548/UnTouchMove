@@ -125,3 +125,22 @@ xem `BACKLOG.md` mục "bộ phân loại TFLite nhỏ" (đã lường trước 
 `HOLD_MAX_MS`, ...) chưa đo được ở Phase 1 vì cần chuyển động thật (vẫy tay,
 giữ/nhả), không phải tư thế tĩnh — giữ nguyên giá trị phỏng đoán của SPEC, để
 đo ở Phase 2/3 khi có cử chỉ thật chạy qua AccessibilityService.
+
+## 2026-09-20 — GestureTestActivity bơm thử cử chỉ bằng nút bấm tay (Phase 2)
+**Chọn**: dựng `UnTouchAccessibilityService` (dispatchGesture cho vuốt/click/
+kéo, performGlobalAction cho back/home/đa nhiệm/thông báo) và `ActionDispatcher`
+(singleton tham chiếu yếu, ARCHITECTURE mục 5) để một màn hình test riêng
+(`GestureTestActivity`) bấm nút gọi thẳng, chưa gắn camera/GestureStateMachine.
+Tham số vuốt/click/kéo (thời lượng, khoảng cách) là giá trị thử nghiệm hợp lý,
+chưa phải số đo thật.
+**Vì**: ROADMAP Phase 2 yêu cầu kiểm chứng cơ chế bơm cử chỉ hoạt động trên máy
+thật trước khi ghép với nhận diện — đây là rủi ro kỹ thuật cao nhất, làm sớm để
+biết sớm. Test trên RMX3370: Back/Home/Đa nhiệm/Thanh thông báo xác nhận đúng
+bằng mắt (đóng activity, về home, mở đa nhiệm, kéo thanh thông báo); chuỗi 5
+đoạn `continueStroke` cho kéo thử chạy hết ~750ms liên tục không lỗi qua log.
+**Đã loại**: gắn thẳng nút test vào `DebugActivity` — tách riêng để không phải
+bật camera khi chỉ cần test bơm cử chỉ, và tránh trộn lẫn hai mục đích debug
+khác nhau (đo đặc trưng tay vs. kiểm tra cơ chế injection).
+**Ghi chú**: độ mượt thực tế của `continueStroke` (kéo) và cảm giác vuốt/click
+là thứ chỉ đo được qua log/ảnh chụp một phần — cần chủ dự án tự bấm và đánh giá
+trên máy khi rảnh, ghi lại ROADMAP Phase 2 mục cuối.

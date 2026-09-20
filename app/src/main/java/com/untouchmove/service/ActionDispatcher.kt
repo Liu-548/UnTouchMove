@@ -1,5 +1,7 @@
 package com.untouchmove.service
 
+import com.untouchmove.gesture.CursorPhase
+import com.untouchmove.gesture.DisplayState
 import java.lang.ref.WeakReference
 
 /**
@@ -31,11 +33,43 @@ object ActionDispatcher {
         serviceRef?.get()?.performClick(x, y)
     }
 
+    fun resetCursor() {
+        serviceRef?.get()?.resetCursor()
+    }
+
+    fun moveCursor(dx: Float, dy: Float) {
+        serviceRef?.get()?.moveCursor(dx, dy)
+    }
+
+    fun gestureClick(x: Float, y: Float) {
+        serviceRef?.get()?.performGestureClick(x, y)
+    }
+
+    fun holdStart(x: Float, y: Float) {
+        serviceRef?.get()?.performHoldStart(x, y)
+    }
+
+    fun holdMove(x: Float, y: Float) {
+        serviceRef?.get()?.performHoldMove(x, y)
+    }
+
+    fun holdEnd() {
+        serviceRef?.get()?.performHoldEnd()
+    }
+
+    fun showCursorPhase(phase: CursorPhase) {
+        serviceRef?.get()?.showCursorPhase(phase)
+    }
+
     fun testDrag() {
         serviceRef?.get()?.performTestDrag()
     }
 
     fun globalAction(action: Int) {
         serviceRef?.get()?.performGlobalAction(action)
+    }
+
+    fun showStatus(state: DisplayState) {
+        serviceRef?.get()?.showStatus(state)
     }
 }

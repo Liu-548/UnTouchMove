@@ -4,6 +4,8 @@
 
 ---
 
+---
+
 ## Đã chốt hoãn
 
 ### Chuyển chế độ giữa chừng
@@ -54,12 +56,30 @@ Người dùng tự đổi "vẩy trái = gì". Hay, nhưng cần UI phức tạ
   `DECISIONS.md`), dùng thử thật trên máy trước. Nếu thực tế M1/M2 hay bị lẫn,
   nghiên cứu lại công thức (đo góc thay vì khoảng cách, hoặc dùng riêng trục
   ngang thay vì khoảng cách 3D) thay vì chỉnh ngưỡng.
+- **Cử chỉ chủ động thoát M2**: đã bỏ hẳn điều kiện huỷ M2 theo khép ngón cái
+  (`t0`, 2026-09-20) đúng vì lý do ở mục ngay trên — đo góc xòe ngón cái quá
+  nhiễu, khiến M2 tự huỷ/vào lại thất thường. Hiện tại M2 chỉ thoát khi tay ra
+  khỏi khung hoặc xoè cả 5 ngón. Nếu người dùng thấy bất tiện (phải rút tay ra
+  mới đổi được chế độ), cần nghĩ cách khác để thoát chủ động — có thể chờ công
+  thức đo ngón cái tốt hơn (mục trên) thay vì thêm điều kiện tạm bợ.
 - **Lướt liên tục theo quãng đường tay** (kiểu touchpad) thay vì vẩy từng cú.
   Có thể mượt hơn cho việc đọc bài dài.
 - **Hiệu chuẩn cá nhân một lần**: bảo người dùng làm từng tư thế một lần lúc cài
   đặt để tự sinh ngưỡng riêng, thay vì dùng ngưỡng cố định.
 - Chế độ tiết kiệm pin hạ fps khi tay đứng yên lâu.
 - Hỗ trợ SmartTV / Android TV.
+- **M4 Hold/kéo cần cải thiện thêm** (người dùng 2026-09-20: "tạm thời cứ để
+  vậy, note cần cải thiện giai đoạn sau" sau khi test thật thấy "không thực
+  sự tốt"). Đã sửa được: con trỏ chạm hết viền màn hình (lỗi dùng nhầm
+  `EDGE_MARGIN`), thêm màu con trỏ theo trạng thái để tự chẩn đoán, lọc
+  tách-khép quá nhanh (`CLICK_MIN_MS`), phân biệt gập ngón/tách ngón, thêm
+  thanh trượt độ nhạy tách ngón (`G_OPEN`). Còn CHƯA đo/xác nhận: cảm giác
+  kéo có mượt không (`HOLD_STEP_DURATION_MS=80ms` là số đoán), độ trễ
+  `continueStroke` nối tiếp có chấp nhận được không, và liệu thanh trượt độ
+  nhạy tách ngón mới thêm có thực sự giải quyết được vấn đề "tay rơi khỏi
+  khung hình" hay cần hướng khác (vd đổi cách đo `gBC`, hoặc cho phép "tách"
+  bằng cử chỉ khác không cần xoè ngón rộng). Xem chi tiết các quyết định
+  ngày 2026-09-20 trong `DECISIONS.md`.
 
 ---
 

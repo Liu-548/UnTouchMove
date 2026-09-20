@@ -1,7 +1,5 @@
 package com.untouchmove.gesture
 
-import kotlin.math.sqrt
-
 /** Cac dai luong dac trung tinh tu world landmarks, xem docs/SPEC.md muc 2. */
 data class Features(
     val s: Float,
@@ -14,6 +12,12 @@ data class Features(
     val gCD: Float,
     val gDE: Float,
     val t: Float,
+    // Huong ngon tro (INDEX_MCP -> INDEX_TIP), da chuan hoa ve vector don vi
+    // (khong chia cho S vi day la HUONG, khong phai vi tri). Dung cho che do
+    // con tro "theo huong ngon tro" (yeu cau nguoi dung 2026-09-20), xem
+    // GestureStateMachine.detectCursor.
+    val pointDirX: Float,
+    val pointDirY: Float,
 )
 
 /** Tinh r, g, t, P, S tu 21 world landmark cua HandLandmarker (thuan Kotlin, khong phu thuoc Android). */
@@ -43,12 +47,16 @@ object FeatureExtractor {
             worldLandmarks[RING_MCP],
             worldLandmarks[PINKY_MCP],
         )
-        val s = dist(worldLandmarks[WRIST], worldLandmarks[MIDDLE_MCP])
+        val s = worldLandmarks[WRIST].distanceTo(worldLandmarks[MIDDLE_MCP])
 
-        fun r(tip: Int) = dist(worldLandmarks[tip], p) / s
+        fun r(tip: Int) = worldLandmarks[tip].distanceTo(p) / s
         fun g(tipX: Int, tipY: Int, mcpX: Int, mcpY: Int) =
-            dist(worldLandmarks[tipX], worldLandmarks[tipY]) /
-                dist(worldLandmarks[mcpX], worldLandmarks[mcpY])
+            worldLandmarks[tipX].distanceTo(worldLandmarks[tipY]) /
+                worldLandmarks[mcpX].distanceTo(worldLandmarks[mcpY])
+
+        val dirRawX = worldLandmarks[INDEX_TIP].x - worldLandmarks[INDEX_MCP].x
+        val dirRawY = worldLandmarks[INDEX_TIP].y - worldLandmarks[INDEX_MCP].y
+        val dirLen = kotlin.math.sqrt(dirRawX * dirRawX + dirRawY * dirRawY).coerceAtLeast(1e-4f)
 
         return Features(
             s = s,
@@ -60,7 +68,9 @@ object FeatureExtractor {
             gBC = g(INDEX_TIP, MIDDLE_TIP, INDEX_MCP, MIDDLE_MCP),
             gCD = g(MIDDLE_TIP, RING_TIP, MIDDLE_MCP, RING_MCP),
             gDE = g(RING_TIP, PINKY_TIP, RING_MCP, PINKY_MCP),
-            t = dist(worldLandmarks[THUMB_TIP], worldLandmarks[INDEX_MCP]) / s,
+            t = worldLandmarks[THUMB_TIP].distanceTo(worldLandmarks[INDEX_MCP]) / s,
+            pointDirX = dirRawX / dirLen,
+            pointDirY = dirRawY / dirLen,
         )
     }
 
@@ -69,11 +79,4 @@ object FeatureExtractor {
         y = points.sumOf { it.y.toDouble() }.toFloat() / points.size,
         z = points.sumOf { it.z.toDouble() }.toFloat() / points.size,
     )
-
-    private fun dist(a: Point3D, b: Point3D): Float {
-        val dx = a.x - b.x
-        val dy = a.y - b.y
-        val dz = a.z - b.z
-        return sqrt(dx * dx + dy * dy + dz * dz)
-    }
 }

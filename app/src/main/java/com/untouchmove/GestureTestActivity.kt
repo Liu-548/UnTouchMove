@@ -63,22 +63,22 @@ private fun GestureTestScreen() {
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text(if (connected) "Accessibility: Da bat" else "Accessibility: Chua bat")
+        Text(if (connected) "Accessibility: Đã bật" else "Accessibility: Chưa bật")
         Text(
-            "Nut vuot/click/keo se doi 2.5s roi moi ban - nhan xong ban chuyen " +
-                "ngay sang man hinh chu hoac app khac de thay tac dung. Back/Home/" +
-                "Da nhiem/Thong bao ban ngay luc bam."
+            "Nút vuốt/click/kéo sẽ đợi 2.5s rồi mới bắn - nhấn xong bạn chuyển " +
+                "ngay sang màn hình chủ hoặc app khác để thấy tác dụng. Back/Home/" +
+                "Đa nhiệm/Thông báo bắn ngay lúc bấm."
         )
         if (!connected) {
             Text(
-                "Neu cong tac bi mo trong xam khong bam duoc: vao Cai dat > Ung " +
-                    "dung > UnTouchMove > mo menu 3 cham > \"Allow restricted " +
-                    "settings\" truoc (Android 13+ chan app cai ngoai Play Store)."
+                "Nếu công tắc bị mờ trong xám không bấm được: vào Cài đặt > Ứng " +
+                    "dụng > UnTouchMove > mở menu 3 chấm > \"Allow restricted " +
+                    "settings\" trước (Android 13+ chặn app cài ngoài Play Store)."
             )
             Button(onClick = {
                 context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
             }) {
-                Text("Mo Cai dat Accessibility")
+                Text("Mở Cài đặt Accessibility")
             }
         }
 
@@ -105,7 +105,7 @@ private const val PRE_FIRE_DELAY_MS = 2500L
 private fun delayedAction(context: android.content.Context, action: () -> Unit): () -> Unit = {
     Toast.makeText(
         context,
-        "Chuyen sang man hinh muon thu trong ${PRE_FIRE_DELAY_MS / 1000}s...",
+        "Chuyển sang màn hình muốn thử trong ${PRE_FIRE_DELAY_MS / 1000}s...",
         Toast.LENGTH_SHORT,
     ).show()
     Handler(Looper.getMainLooper()).postDelayed(action, PRE_FIRE_DELAY_MS)
@@ -115,17 +115,17 @@ private fun testButtons(context: android.content.Context): List<Pair<String, () 
     val metrics = context.resources.displayMetrics
     fun delayed(action: () -> Unit) = delayedAction(context, action)
     return listOf(
-        "Vuot len (tre 2.5s)" to delayed { ActionDispatcher.swipe(UnTouchAccessibilityService.SwipeDirection.UP) },
-        "Vuot xuong (tre 2.5s)" to delayed { ActionDispatcher.swipe(UnTouchAccessibilityService.SwipeDirection.DOWN) },
-        "Vuot trai (tre 2.5s)" to delayed { ActionDispatcher.swipe(UnTouchAccessibilityService.SwipeDirection.LEFT) },
-        "Vuot phai (tre 2.5s)" to delayed { ActionDispatcher.swipe(UnTouchAccessibilityService.SwipeDirection.RIGHT) },
-        "Click giua man hinh (tre 2.5s)" to delayed {
+        "Vuốt lên (trễ 2.5s)" to delayed { ActionDispatcher.swipe(UnTouchAccessibilityService.SwipeDirection.UP) },
+        "Vuốt xuống (trễ 2.5s)" to delayed { ActionDispatcher.swipe(UnTouchAccessibilityService.SwipeDirection.DOWN) },
+        "Vuốt trái (trễ 2.5s)" to delayed { ActionDispatcher.swipe(UnTouchAccessibilityService.SwipeDirection.LEFT) },
+        "Vuốt phải (trễ 2.5s)" to delayed { ActionDispatcher.swipe(UnTouchAccessibilityService.SwipeDirection.RIGHT) },
+        "Click giữa màn hình (trễ 2.5s)" to delayed {
             ActionDispatcher.click(metrics.widthPixels / 2f, metrics.heightPixels / 2f)
         },
-        "Keo thu trai->phai (tre 2.5s)" to delayed { ActionDispatcher.testDrag() },
+        "Kéo thử trái->phải (trễ 2.5s)" to delayed { ActionDispatcher.testDrag() },
         "Back" to { ActionDispatcher.globalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK) },
         "Home" to { ActionDispatcher.globalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME) },
-        "Da nhiem" to { ActionDispatcher.globalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_RECENTS) },
-        "Thanh thong bao" to { ActionDispatcher.globalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS) },
+        "Đa nhiệm" to { ActionDispatcher.globalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_RECENTS) },
+        "Thanh thông báo" to { ActionDispatcher.globalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS) },
     )
 }

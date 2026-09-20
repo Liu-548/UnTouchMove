@@ -1,0 +1,4 @@
+<resources>
+    <!-- Mau nen icon launcher, khop mau chinh cua UnTouchTheme (Teal 800). -->
+    <color name="ic_launcher_background">#00695C</color>
+</resources>

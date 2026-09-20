@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!--
+        Logo don gian: 2 ngon tay dung + long ban tay (giong tu the M2 con tro
+        cua app, bo ngon cai cho gon) - "viên thuốc" bo tron, cung phong cach
+        voi HandPoseIcon trong GuideActivity. Ve bang vector thuan, khong can
+        anh/tai nguyen ngoai.
+    -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M42,33 A5,5 0 0 1 52,33 L52,61 A5,5 0 0 1 42,61 L42,33 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M56,29 A5,5 0 0 1 66,29 L66,61 A5,5 0 0 1 56,61 L56,29 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M44,62 H64 A8,8 0 0 1 72,70 V76 A8,8 0 0 1 64,84 H44 A8,8 0 0 1 36,76 V70 A8,8 0 0 1 44,62 Z" />
+</vector>

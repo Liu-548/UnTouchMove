@@ -3,6 +3,7 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <uses-feature
         android:name="android.hardware.camera.front"
@@ -10,6 +11,8 @@
 
     <application
         android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/Theme.UnTouchMove">
 
@@ -32,6 +35,21 @@
             android:name=".GestureTestActivity"
             android:exported="false"
             android:theme="@style/Theme.UnTouchMove" />
+
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.UnTouchMove" />
+
+        <activity
+            android:name=".GuideActivity"
+            android:exported="false"
+            android:theme="@style/Theme.UnTouchMove" />
+
+        <service
+            android:name=".service.GestureForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="camera" />
 
         <service
             android:name=".service.UnTouchAccessibilityService"

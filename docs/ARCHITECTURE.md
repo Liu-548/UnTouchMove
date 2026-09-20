@@ -54,6 +54,7 @@ kiện để unit test được mà không cần thiết bị. Nó nhận vào m
 ```
 app/src/main/java/com/untouchmove/
 ├── MainActivity.kt                 Compose UI, một màn hình
+├── SettingsActivity.kt             màn hình cài đặt độ nhạy (thanh trượt)
 ├── DebugActivity.kt                màn hình đo đạc (Phase 1)
 ├── LauncherProxyActivity.kt        Activity trong suốt, dùng để khởi động service
 ├── tile/

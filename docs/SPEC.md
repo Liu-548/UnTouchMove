@@ -79,30 +79,80 @@ Nếu nhận thấy **cả a, b, c, d, e đều dựng** thì **không kích ho�
 đang ở trạng thái nào (trừ khi đang HOLD thì phải nhả ra an toàn trước). Đây là
 tư thế "tay rảnh", dùng để người dùng đưa tay vào khung mà không sợ lỡ tay.
 
-### 4.1 M1 — Lướt 2 ngón
+### 4.1 M1 — Lướt (2 ngón cho Lên/Xuống, 3 ngón cho Trái/Phải)
 
-- **Tư thế vào**: b và c dựng, khép nhau (`g_bc ≤ G_CLOSE`); a, d, e gập.
-- **Thao tác**: vẩy bàn tay theo hướng muốn lướt (lên / xuống / trái / phải).
-  Một cú vẩy vượt ngưỡng vận tốc = một cú vuốt được bơm ra hệ thống.
-- **Hủy**: tách b và c (`g_bc ≥ G_OPEN`), hoặc tay ra khỏi khung.
-- **Chống vuốt ngược**: sau mỗi cú vuốt có thời gian nghỉ `SWIPE_COOLDOWN`,
-  trong thời gian đó mọi chuyển động bị bỏ qua (để người dùng đưa tay về chỗ cũ).
-- **Hướng**: chỉ tính khi thành phần theo một trục lớn hơn trục kia ít nhất
-  `AXIS_RATIO` lần; nếu không thì bỏ qua (chuyển động chéo không tính).
+**Thay đổi thiết kế 2026-09-20 (yêu cầu người dùng)**: ban đầu SPEC chỉ có 1 tư
+thế 2 ngón cho cả 4 hướng, dùng vận tốc + tỉ lệ trục để đoán hướng. Test thật
+cho thấy cách đoán này dễ lẫn Trái/Phải sang Lên/Xuống (vẫy ngang tự nhiên có
+lệch trục dọc do cơ chế cổ tay/khuỷu tay). Chuyển sang **2 tư thế tay riêng
+biệt loại trừ lẫn nhau** — tư thế đã quyết định sẵn trục được phép, không cần
+đoán qua vận tốc nữa:
+
+- **Tư thế 2 ngón (VERTICAL) — chỉ Lên/Xuống**: b và c dựng, khép nhau
+  (`g_bc ≤ G_CLOSE`); d, e gập.
+- **Tư thế 3 ngón (HORIZONTAL) — chỉ Trái/Phải**: b, c, d dựng, khép nhau cả
+  ba (`g_bc ≤ G_CLOSE` VÀ `g_cd ≤ G_CLOSE`); e gập.
+- Ở tư thế 2 ngón, chuyển động ngang trội hơn (dù nhanh cỡ nào) bị BỎ QUA
+  hoàn toàn, không tính là lướt gì cả — và ngược lại với tư thế 3 ngón.
+- **Thao tác**: vẩy bàn tay theo hướng muốn lướt. Một cú vẩy vượt ngưỡng vận
+  tốc = một cú vuốt được bơm ra hệ thống.
+- **Hủy**: đổi sang tư thế khác (kể cả tư thế kia) hoặc thả lỏng tay, hoặc
+  tay ra khỏi khung.
+- **Chống vuốt ngược**: sau mỗi cú vuốt, có thời gian nghỉ tối thiểu
+  `SWIPE_COOLDOWN` VÀ bắt buộc tay phải về trạng thái **đứng yên** (vận tốc
+  xuống dưới `SWIPE_REST_VEL_MAX`) mới cho vuốt tiếp — không chỉ chờ hết
+  thời gian nghỉ. Nếu tay vẫn đang di chuyển nhanh sau khi hết `SWIPE_COOLDOWN`,
+  tiếp tục bỏ qua cho đến khi tay dừng lại.
+- **Hướng trong cùng 1 tư thế**: chỉ tính khi thành phần theo trục được phép
+  của tư thế đó lớn hơn trục kia ít nhất `AXIS_RATIO` lần; nếu không thì bỏ
+  qua (chuyển động chéo không tính).
+- **Ngưỡng vận tốc RIÊNG theo hướng** (yêu cầu người dùng 2026-09-20 sau khi
+  test thật thấy độ nhạy lệch hẳn giữa các hướng do đặc điểm vận động tay):
+  `SWIPE_VEL_MIN_UP` (nhạy nhất), `SWIPE_VEL_MIN_DOWN` (trung bình),
+  `SWIPE_VEL_MIN_LEFT_RIGHT` (kém nhạy nhất, cần di chuyển xa hơn).
 
 ### 4.2 M2 — Con trỏ ảo
 
 - **Tư thế vào**: a, b, c dựng; b và c khép nhau (`g_bc ≤ G_CLOSE`);
   a xòe (`t ≥ T_OUT`); d, e gập.
-- **Khi vào chế độ, lưu lại `t0 = t` tại thời điểm đó** làm mốc cá nhân hóa.
-- **Di chuyển con trỏ**: theo **chuyển động tương đối** của điểm neo, nhân hệ số
-  `CURSOR_GAIN`, qua bộ lọc thích nghi (One Euro filter).
-  - **Điểm neo là `P` (tâm lòng bàn tay), KHÔNG phải đầu ngón.** Lý do: khi b,c
-    tách ra để click hoặc hold, đầu ngón dịch chuyển và sẽ kéo con trỏ lệch đi.
-  - Chuyển động tương đối cho phép "nhấc tay đặt lại" như dùng chuột, và khi tay
-    tạm mất tracking rồi quay lại, con trỏ không nhảy vị trí.
-- **Hủy**: khép cả a, b, c (`t ≤ t0 × T_CLOSE_RATIO` **và** `g_bc ≤ G_CLOSE`),
-  hoặc tay ra khỏi khung > 300ms.
+- **Di chuyển con trỏ — 2 chế độ, chuyển qua lại bằng công tắc trong Cài đặt**
+  (thay đổi 2026-09-20, yêu cầu người dùng — chế độ "theo tay" một mình khó
+  bao hết màn hình nếu tay không di chuyển được xa):
+  - **Theo tay (mặc định)**: theo **chuyển động tương đối** của điểm neo `P`
+    (tâm lòng bàn tay, KHÔNG phải đầu ngón — lý do: khi b,c tách ra để
+    click/hold, đầu ngón dịch chuyển và sẽ kéo con trỏ lệch đi), nhân hệ số
+    `CURSOR_GAIN`, qua bộ lọc thích nghi (One Euro filter). Tích luỹ qua từng
+    khung như dùng chuột — nhấc tay đặt lại không làm con trỏ nhảy.
+  - **Theo hướng ngón trỏ**: **2 trục dùng 2 cơ chế khác nhau** (chốt sau
+    3 lần thử, xem DECISIONS.md):
+    - **Trái/phải**: vị trí tuyệt đối = độ lệch góc của hướng ngón trỏ (từ
+      khớp gốc tới đầu ngón, KHÔNG đảo dấu — khác với vị trí `P` ở chế độ
+      "theo tay", 2 đại lượng vật lý khác nhau không dùng chung 1 quy ước
+      dấu) so với hướng lúc vào M2, nhân `CURSOR_GAIN`. Tính lại tuyệt đối
+      mỗi khung, không tích luỹ — như điều khiển tia laser.
+    - **Lên/xuống**: KHÔNG dùng góc chỉ tay (đã thử — cổ tay hết biên độ khi
+      giữ tư thế vào M2, xem DECISIONS.md). Dùng **trạng thái rời rạc của
+      b, c** kiểu nút bấm: b,c đều **dựng** (giống tư thế vào) → đứng yên;
+      b,c đều **hạ** → di chuyển XUỐNG liên tục; b dựng, c hạ → di chuyển
+      LÊN liên tục; b hạ, c dựng → chưa định nghĩa, tạm coi đứng yên. Đây là
+      DI CHUYỂN LIÊN TỤC (như giữ phím) chứ không phải vị trí tuyệt đối.
+  - Cả 2 chế độ dùng chung `CURSOR_GAIN` cho trục X, nhưng con số hợp lý
+    khác nhau hẳn giữa 2 chế độ — cần tự chỉnh lại khi đổi chế độ.
+- **Sau khi vào M2, ngón cái (a) di chuyển thế nào cũng không ảnh hưởng gì**
+  (đã thử dùng ngón cái điều khiển chiều Lên, không hiệu quả — xem
+  DECISIONS.md). **Thay đổi 2026-09-20 (yêu cầu người dùng)**: bản đầu có
+  huỷ theo `t0` của ngón cái, nhưng góc xòe ngón cái đo trên máy thật quá
+  nhiễu (xem Phase 1 — `T_OUT`/`T_IN` không tách biệt rõ), khiến M2 tự
+  huỷ/vào lại liên tục ngoài ý muốn. Đã bỏ hẳn điều kiện huỷ theo ngón cái.
+- **Hủy: CHỈ bằng cách xoè cả 5 ngón** (mục 4.0). **Thiết kế chính thức
+  2026-09-20 (yêu cầu người dùng)** — khác với các chế độ khác:
+  - **Mất tay KHÔNG huỷ M2.** Con trỏ đứng yên tại vị trí cuối cùng còn bắt
+    được tay (không ẩn đi); khi bắt lại được tay, con trỏ tiếp tục di chuyển
+    tiếp từ vị trí hiện tại theo hướng tay di chuyển — không nhảy, không reset.
+  - **Đổi sang tư thế vuốt (M1, 2/3 ngón) trong lúc đang ở M2 KHÔNG kích hoạt
+    được M1** — chỉ được coi là chuyển động tay bình thường trong M2. Muốn
+    dùng M1 phải thoát M2 (xoè cả 5 ngón) trước.
+  - Mỗi lần **vào M2 mới**, con trỏ luôn xuất hiện lại từ **giữa màn hình**.
 - **Con trỏ hiển thị**: chấm tròn nhỏ bán trong suốt, vẽ bằng overlay của
   AccessibilityService.
 
@@ -110,10 +160,17 @@ tư thế "tay rảnh", dùng để người dùng đưa tay vào khung mà khô
 
 Chỉ tồn tại khi đang ở M2.
 
-- **Điều kiện**: a vẫn xòe (`t ≥ T_OUT`), b và c **tách ra rồi khép lại** trong
-  vòng `CLICK_MAX_MS`.
+- **Điều kiện**: b và c **tách ra rồi khép lại** trong vòng `CLICK_MAX_MS`
+  (điều kiện ngón cái `a` đã bỏ cùng lúc bỏ điều kiện huỷ theo `t0` ở mục 4.2
+  — sau khi vào M2 chỉ còn xét b, c).
 - **Tọa độ click** lấy tại **thời điểm bắt đầu tách**, không phải lúc khép lại.
 - Sau khi click có cooldown `CLICK_COOLDOWN` để tránh nhân đôi.
+- **`CLICK_MAX_MS` 300ms → 600ms (2026-09-20)**: người dùng báo chưa từng
+  click được — nghi ngờ chính là độ trễ vote/hysteresis của `PoseClassifier`
+  (mỗi lần đổi trạng thái tách/khép cần ~4-5 khung để "vote" được coi là thật
+  sự xảy ra, xem mục 3) ăn hết phần lớn ngân sách 300ms trước khi kịp xác
+  nhận khép lại. Tăng gấp đôi để bù độ trễ này — vẫn là **số đoán**, chưa đo
+  thật số khung/ms cần thiết.
 
 ### 4.4 M4 — Hold và kéo
 
@@ -195,13 +252,18 @@ thật ở Phase 1 (140 lần ghi trên RMX3370/GT Neo 2, xem `docs/DECISIONS.md
 | `T_CLOSE_RATIO` | 0.6 | khép a = 60% của t0 (giữ nguyên đoán, mang tính tỷ lệ) |
 | `ARM_HOLD_MS` | 500 | thời gian giữ yên để kích hoạt — **chưa đo** |
 | `ARM_JITTER` | 0.15 | dịch chuyển cho phép khi arming (theo S) — **chưa đo** |
-| `CLICK_MAX_MS` | 300 | tách ngắn hơn = click, dài hơn = hold — **chưa đo** |
+| `CLICK_MAX_MS` | 600 | tách ngắn hơn = click, dài hơn = hold (tăng từ 300 ngày 2026-09-20 vì chưa từng click được — nghi do độ trễ vote 4/5 khung) — **vẫn chưa đo thật** |
 | `CLICK_COOLDOWN` | 250ms | **chưa đo** |
-| `SWIPE_VEL_MIN` | cần đo | vận tốc tối thiểu cho M1 — **chưa đo, cần Phase 3** |
+| `SWIPE_VEL_MIN_UP` | 0.15 | vận tốc tối thiểu hướng Lên — tăng mạnh độ nhạy theo yêu cầu người dùng 2026-09-20 |
+| `SWIPE_VEL_MIN_DOWN` | 0.4 | vận tốc tối thiểu hướng Xuống — giữ nguyên, đo thật 2026-09-20 |
+| `SWIPE_VEL_MIN_LEFT_RIGHT` | 0.3 | vận tốc tối thiểu Trái/Phải (đã thử 0.8, 0.65 — vẫn quá khó; sau khi tách tư thế 3 ngón riêng thì hết cần ngưỡng cao để phòng lẫn hướng, hạ xuống dưới cả DOWN vì tư thế 3 ngón tự nó khó vẫy nhanh — 2026-09-20) |
+| `VELOCITY_WINDOW_MS` | 120ms | cửa sổ tính vận tốc (làm mịn dtMs dao động giữa các khung) — **đoạn ban đầu, chưa đo kỹ** |
+| `SWIPE_REST_VEL_MAX` | SWIPE_VEL_MIN / 3 | ngưỡng "đứng yên" để cho vuốt tiếp (yêu cầu người dùng 2026-09-20) — **đoạn ban đầu, chưa đo** |
 | `SYS_VEL_MIN` | ~1.5 × SWIPE_VEL_MIN | ngưỡng cho M5 — **chưa đo** |
-| `SWIPE_COOLDOWN` | 500ms | chống vuốt ngược — **chưa đo** |
-| `AXIS_RATIO` | 1.8 | trục chính phải trội hơn trục phụ — **chưa đo** |
-| `CURSOR_GAIN` | 2.0 | hệ số khuếch đại, cho chỉnh trong cài đặt — **chưa đo** |
+| `SWIPE_COOLDOWN` | 800ms | thời gian nghỉ tối thiểu (tăng từ 500ms theo yêu cầu người dùng 2026-09-20), cộng thêm điều kiện đứng yên ở trên |
+| `AXIS_RATIO` | 2.2 | trục chính phải trội hơn trục phụ (đã thử 1.8 rồi 1.5, cuối cùng tăng lên 2.2 vì Trái/Phải dễ lẫn sang Lên/Xuống khi ngưỡng vận tốc mỗi hướng khác nhau — 2026-09-20) |
+| `CURSOR_GAIN` | 150 (dp/đơn vị) | hệ số khuếch đại con trỏ (trục X ở chế độ theo hướng ngón trỏ, cả 2 trục ở chế độ theo tay) — chỉnh qua màn hình Cài đặt (2026-09-20), **chưa đo trên máy thật** |
+| `CURSOR_POINTING_VERTICAL_STEP` | 8 (dp/khung) | bước di chuyển Lên/Xuống mỗi khung khi giữ trạng thái b,c tương ứng (chế độ theo hướng ngón trỏ, 2026-09-20) — **chưa đo** |
 | `LOST_HAND_MS` | 300 | mất tay bao lâu thì coi là ra khỏi khung — **chưa đo** |
 | `HOLD_LOST_MS` | 300 | mất tay khi đang hold → nhả — **chưa đo** |
 | `HOLD_MAX_MS` | 15000 | hold tối đa tuyệt đối — **chưa đo** |

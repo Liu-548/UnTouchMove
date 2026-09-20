@@ -204,7 +204,7 @@ private fun StatsPanel(
     onShareClick: (File) -> Unit,
 ) {
     Column(modifier = Modifier.padding(12.dp)) {
-        Text("fps: ${"%.1f".format(fps)}   do tin cay: ${"%.2f".format(confidence)}")
+        Text("fps: ${"%.1f".format(fps)}   độ tin cậy: ${"%.2f".format(confidence)}")
         if (features != null) {
             Text(
                 "r_b=${fmt(features.rB)}  r_c=${fmt(features.rC)}  " +
@@ -215,18 +215,18 @@ private fun StatsPanel(
                     "g_de=${fmt(features.gDE)}  t=${fmt(features.t)}"
             )
         } else {
-            Text("Khong thay tay")
+            Text("Không thấy tay")
         }
         Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
             Button(onClick = onRecordClick, enabled = !isRecording) {
-                Text(if (isRecording) "Dang ghi..." else "Ghi 5 giay")
+                Text(if (isRecording) "Đang ghi..." else "Ghi 5 giây")
             }
             if (lastSavedFile != null) {
                 Button(
                     onClick = { onShareClick(lastSavedFile) },
                     modifier = Modifier.padding(start = 8.dp),
                 ) {
-                    Text("Chia se file moi nhat")
+                    Text("Chia sẻ file mới nhất")
                 }
             }
         }
@@ -253,7 +253,7 @@ private fun shareCsv(context: Context, file: File) {
         putExtra(Intent.EXTRA_STREAM, uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    context.startActivity(Intent.createChooser(intent, "Chia se file CSV"))
+    context.startActivity(Intent.createChooser(intent, "Chia sẻ file CSV"))
 }
 
 // Cac cap landmark noi lien nhau de ve skeleton (theo quy uoc MediaPipe Hand)

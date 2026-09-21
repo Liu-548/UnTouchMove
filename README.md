@@ -6,7 +6,10 @@ hoạt động trên **mọi ứng dụng**.
 Dự án cá nhân, không thương mại. Lấy cảm hứng từ tính năng Air Gestures của
 realme nhưng không bị giới hạn ở một vài app được hỗ trợ sẵn.
 
-> Trạng thái: **đang phát triển, chưa dùng được.** Xem `docs/ROADMAP.md`.
+> Trạng thái: **đang phát triển, đã dùng được cơ bản trên máy thật** (test
+> trên Realme GT Neo 2) — vuốt, con trỏ/click/giữ-kéo, cử chỉ hệ thống 4
+> ngón đều chạy. Một số ngưỡng độ nhạy vẫn đang tinh chỉnh dần. Xem
+> `docs/ROADMAP.md`.
 
 ## Bộ cử chỉ
 
@@ -14,15 +17,18 @@ Ký hiệu ngón: a = cái, b = trỏ, c = giữa, d = áp út, e = út.
 
 | Chế độ | Tư thế vào | Thao tác | Hủy |
 |---|---|---|---|
-| Lướt | b, c dựng và khép | vẩy 4 hướng để cuộn | tách b, c |
-| Con trỏ | a, b, c dựng; b,c khép; a xòe | di chuyển tay | khép cả 3 ngón |
-| Click | (đang ở chế độ con trỏ) | tách b,c rồi khép ngay | — |
-| Kéo | (đang ở chế độ con trỏ) | tách b,c và giữ, rồi di chuyển | khép b,c |
-| Hệ thống | b, c, d, e dựng và rời; a gập | vẩy: trái=back, phải=đa nhiệm, lên=home, xuống=thông báo | khép 4 ngón |
-| Nghỉ | mở cả 5 ngón | không kích hoạt gì | — |
+| Lướt 2 ngón | b, c dựng và khép; d, e gập | vẩy Lên/Xuống | đổi tư thế khác hoặc thả lỏng tay |
+| Lướt 3 ngón | b, c, d dựng và khép; e gập | vẩy Trái/Phải | đổi tư thế khác hoặc thả lỏng tay |
+| Con trỏ | a, b, c dựng; b,c khép; a xòe; d,e gập | di chuyển tay (hoặc theo hướng ngón trỏ, đổi trong Cài đặt) | **chỉ** xòe cả 5 ngón |
+| Click | (đang ở chế độ con trỏ) | tách b,c rồi khép lại nhanh | — |
+| Giữ và kéo | (đang ở chế độ con trỏ) | tách b,c giữ lâu hơn click, rồi di chuyển | khép b,c lại; tự nhả nếu mất tay hoặc giữ quá lâu |
+| Hệ thống — tư thế khép | b,c,d,e dựng, khép sát nhau; a gập | vẩy: trái=Back, phải=Đa nhiệm | tách 4 ngón ra |
+| Hệ thống — tư thế tách | b,c,d,e dựng, tách rời nhau; a gập | vẩy: trái=Home, phải=Thông báo | khép 4 ngón lại |
+| Nghỉ | mở cả 5 ngón | không kích hoạt gì, luôn thoát mọi chế độ | — |
 
 Mọi chế độ đều cần giữ tay yên nửa giây để kích hoạt, tránh nhận nhầm. Khi kích
-hoạt, một icon nhỏ hiện ở góc màn hình — không rung, không âm thanh.
+hoạt, một icon nhỏ hiện ở góc màn hình — không rung, không âm thanh. Từng nhóm
+cử chỉ (Lướt / Con trỏ / Hệ thống) có thể bật/tắt riêng trong màn hình Cài đặt.
 
 ## Riêng tư
 

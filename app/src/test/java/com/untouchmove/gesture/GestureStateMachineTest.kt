@@ -814,6 +814,57 @@ class GestureStateMachineTest {
     }
 
     @Test
+    fun `tat M1 thi tu the vuot khong kich hoat gi ca`() {
+        val original = GestureThresholds.ENABLE_M1_SWIPE
+        GestureThresholds.ENABLE_M1_SWIPE = false
+        try {
+            val machine = GestureStateMachine()
+            var t = 0L
+            repeat(20) {
+                machine.onFrame(frame(m1Landmarks(), t))
+                t += 50L
+            }
+            assertEquals(DisplayState.NONE, machine.displayState)
+        } finally {
+            GestureThresholds.ENABLE_M1_SWIPE = original
+        }
+    }
+
+    @Test
+    fun `tat M2 thi tu the con tro khong kich hoat gi ca`() {
+        val original = GestureThresholds.ENABLE_M2_CURSOR
+        GestureThresholds.ENABLE_M2_CURSOR = false
+        try {
+            val machine = GestureStateMachine()
+            var t = 0L
+            repeat(20) {
+                machine.onFrame(frame(cursorLandmarks(), t))
+                t += 50L
+            }
+            assertEquals(DisplayState.NONE, machine.displayState)
+        } finally {
+            GestureThresholds.ENABLE_M2_CURSOR = original
+        }
+    }
+
+    @Test
+    fun `tat M5 thi tu the 4 ngon khong kich hoat gi ca`() {
+        val original = GestureThresholds.ENABLE_M5_SYSTEM
+        GestureThresholds.ENABLE_M5_SYSTEM = false
+        try {
+            val machine = GestureStateMachine()
+            var t = 0L
+            repeat(20) {
+                machine.onFrame(frame(systemSpreadLandmarks(), t))
+                t += 50L
+            }
+            assertEquals(DisplayState.NONE, machine.displayState)
+        } finally {
+            GestureThresholds.ENABLE_M5_SYSTEM = original
+        }
+    }
+
+    @Test
     fun `mat tay ve IDLE ngay lap tuc`() {
         val machine = GestureStateMachine()
         var t = 0L

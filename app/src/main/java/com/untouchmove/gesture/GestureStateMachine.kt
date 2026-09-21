@@ -649,11 +649,11 @@ class GestureStateMachine {
      * - xet System truoc de no "thang" duoc truoc khi pose.e cu kip gay nham.
      */
     private fun entryTargetOf(pose: StablePose): ArmTarget? = when {
-        isSystemSpreadEntryPose(pose) -> ArmTarget.System(SystemPoseMode.SPREAD)
-        isSystemClosedEntryPose(pose) -> ArmTarget.System(SystemPoseMode.CLOSED)
-        isHorizontalEntryPose(pose) -> ArmTarget.Swipe(SwipeAxisMode.HORIZONTAL)
-        isVerticalEntryPose(pose) -> ArmTarget.Swipe(SwipeAxisMode.VERTICAL)
-        isCursorEntryPose(pose) -> ArmTarget.Cursor
+        GestureThresholds.ENABLE_M5_SYSTEM && isSystemSpreadEntryPose(pose) -> ArmTarget.System(SystemPoseMode.SPREAD)
+        GestureThresholds.ENABLE_M5_SYSTEM && isSystemClosedEntryPose(pose) -> ArmTarget.System(SystemPoseMode.CLOSED)
+        GestureThresholds.ENABLE_M1_SWIPE && isHorizontalEntryPose(pose) -> ArmTarget.Swipe(SwipeAxisMode.HORIZONTAL)
+        GestureThresholds.ENABLE_M1_SWIPE && isVerticalEntryPose(pose) -> ArmTarget.Swipe(SwipeAxisMode.VERTICAL)
+        GestureThresholds.ENABLE_M2_CURSOR && isCursorEntryPose(pose) -> ArmTarget.Cursor
         else -> null
     }
 

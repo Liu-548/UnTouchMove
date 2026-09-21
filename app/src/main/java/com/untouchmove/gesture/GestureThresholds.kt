@@ -240,4 +240,12 @@ object GestureThresholds {
     const val HOLD_MAX_MS = 15_000L
     const val EDGE_MARGIN = 0.05f
     const val CONF_MIN = 0.6f
+
+    // Bat/tat tung nhom cu chi rieng le (SPEC muc 7 "bat/tat tung nhom cu
+    // chi", ROADMAP Phase 7). Chinh qua Cai dat (SettingsScreen.kt +
+    // data/SettingsRepository.kt), xet o GestureStateMachine.entryTargetOf -
+    // nhom dang tat thi khong vao duoc che do do, cac nhom khac khong anh huong.
+    var ENABLE_M1_SWIPE = true
+    var ENABLE_M2_CURSOR = true
+    var ENABLE_M5_SYSTEM = true
 }

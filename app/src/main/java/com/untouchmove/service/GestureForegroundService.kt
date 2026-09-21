@@ -93,6 +93,9 @@ class GestureForegroundService : LifecycleService() {
         lifecycleScope.launch { repo.cursorPointingMode.collect { GestureThresholds.CURSOR_POINTING_MODE = it } }
         lifecycleScope.launch { repo.gOpen.collect { GestureThresholds.G_OPEN = it } }
         lifecycleScope.launch { repo.sysVelMin.collect { GestureThresholds.SYS_VEL_MIN = it } }
+        lifecycleScope.launch { repo.enableM1Swipe.collect { GestureThresholds.ENABLE_M1_SWIPE = it } }
+        lifecycleScope.launch { repo.enableM2Cursor.collect { GestureThresholds.ENABLE_M2_CURSOR = it } }
+        lifecycleScope.launch { repo.enableM5System.collect { GestureThresholds.ENABLE_M5_SYSTEM = it } }
         lifecycleScope.launch {
             // Khac voi cac nguong tren: HAND_DETECTION_CONFIDENCE chi doc luc
             // tao HandLandmarker (khong phai moi khung) - phai dong+tao lai

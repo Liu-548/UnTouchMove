@@ -1244,3 +1244,36 @@ camera/nút bật có shadow, icon trạng thái dạng vòng tròn màu dễ nh
 chấm phẳng cũ, nút "Hướng dẫn sử dụng" hiển thị đủ 2 dòng không bị cắt.
 **Chưa đo**: cảm giác dùng thật (đẹp hơn hay không) chưa có phản hồi trực
 tiếp từ người dùng, mới xác nhận bằng ảnh chụp màn hình do Claude tự chụp.
+
+## 2026-09-21 — Cài đặt: bật/tắt từng nhóm cử chỉ (M1/M2/M5)
+**Chọn**: thêm 3 `var Boolean` trong `GestureThresholds`
+(`ENABLE_M1_SWIPE`/`ENABLE_M2_CURSOR`/`ENABLE_M5_SYSTEM`, mặc định `true`),
+theo đúng pattern các ngưỡng chỉnh-qua-Cài-đặt đã có (`G_OPEN`,
+`CURSOR_POINTING_MODE`...). Gate ở đúng 1 chỗ duy nhất —
+`GestureStateMachine.entryTargetOf()` — nhóm nào tắt thì hàm này không trả
+về `ArmTarget` cho tư thế vào của nhóm đó nữa, không đụng logic bên trong
+`detectSwipe`/`detectCursor`/`detectSystem`. Vì `SwipeActive` gọi lại
+`entryTargetOf()` mỗi khung để kiểm tra còn đúng tư thế không, tắt M1 khi
+đang vuốt dở tự động huỷ về IDLE ngay khung tiếp theo — không cần code thêm.
+M2/M5 không có hành vi tự huỷ này khi tắt giữa chừng (2 chế độ đó vốn không
+gọi lại `entryTargetOf()` liên tục vì lý do khác, xem comment tại
+`detectCursor`/`detectSystem`) — chấp nhận, chỉ chặn được lần vào tiếp theo,
+giống đúng cách M2 vốn đã hoạt động (chỉ thoát bằng xoè 5 ngón).
+UI: 3 công tắc (`Switch`) trong 1 `SettingsSection` mới "Bật/tắt từng cử
+chỉ", đặt đầu `SettingsScreen`. Lưu qua `SettingsRepository`
+(`booleanPreferencesKey`), `GestureForegroundService.observeSettings()`
+collect và gán thẳng vào `GestureThresholds` — áp dụng ngay, không cần khởi
+động lại service/camera (giống các cờ khác, khác `HAND_DETECTION_CONFIDENCE`
+vốn cần tạo lại `HandLandmarker`).
+**Vì**: SPEC mục 7 đã chốt sẵn "Chỉ có: hệ số con trỏ, chọn tay thuận, và
+bật/tắt từng nhóm cử chỉ" và ROADMAP Phase 7 có mục chưa làm đúng tên này —
+không phải tính năng tự thêm ngoài SPEC.
+**Đã loại**: không làm bật/tắt chi tiết hơn (từng hướng vuốt, từng hành
+động M5 riêng — Back/Recents/Home/Notifications) vì SPEC chỉ nói "từng
+NHÓM cử chỉ", không phải từng hành động con; thêm granularity đó là đoán
+thêm ngoài đặc tả.
+**Chưa làm**: "chọn tay thuận" (phần còn lại của cùng mục ROADMAP) — để
+riêng, không lẫn vào cùng 1 thay đổi vì không liên quan logic bật/tắt.
+**Cần test trên máy thật**: tắt từng nhóm rồi thử đúng tư thế vào của nhóm
+đó xem có thật sự im lặng không, và tắt/bật lại nhiều lần xem
+`SettingsScreen` có đọc đúng giá trị đã lưu khi mở lại màn hình không.

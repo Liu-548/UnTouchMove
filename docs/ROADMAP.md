@@ -318,7 +318,14 @@ nguyên hành vi cũ (0.375), người dùng tự kéo để tăng nhạy. Chi t
       trước đó dùng tiếng Việt không dấu; comment trong code vẫn giữ không
       dấu theo quy ước cũ của cả dự án, chỉ đổi phần người dùng nhìn thấy
 - [ ] Quick Settings Tile + `LauncherProxyActivity`, test trên cả hai máy
-- [ ] Cài đặt: tay thuận, bật/tắt từng nhóm cử chỉ
+- [x] Cài đặt: bật/tắt từng nhóm cử chỉ (M1 Lướt / M2 Con trỏ / M5 Hệ thống 4
+      ngón) — 3 công tắc mới trong `SettingsActivity`, lưu qua
+      `SettingsRepository` (DataStore), áp dụng ngay cho
+      `GestureForegroundService` đang chạy không cần khởi động lại. Tắt nhóm
+      nào thì `GestureStateMachine.entryTargetOf` không nhận tư thế vào của
+      nhóm đó nữa (`GestureThresholds.ENABLE_M1_SWIPE/ENABLE_M2_CURSOR/
+      ENABLE_M5_SYSTEM`). "Tay thuận" **chưa làm** — SPEC chỉ dùng tay thuận
+      để chọn `numHands`, không ảnh hưởng logic cử chỉ, tách để làm sau.
 - [ ] README đầy đủ, LICENSE, push lên Git
 
 **Cập nhật 2026-09-20**: người dùng yêu cầu "làm giao diện trông đẹp (tối

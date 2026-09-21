@@ -31,6 +31,9 @@ class SettingsRepository(context: Context) {
     private val keyCursorPointingMode = booleanPreferencesKey("cursor_pointing_mode")
     private val keyGOpen = floatPreferencesKey("g_open")
     private val keySysVelMin = floatPreferencesKey("sys_vel_min")
+    private val keyEnableM1Swipe = booleanPreferencesKey("enable_m1_swipe")
+    private val keyEnableM2Cursor = booleanPreferencesKey("enable_m2_cursor")
+    private val keyEnableM5System = booleanPreferencesKey("enable_m5_system")
 
     val velUp: Flow<Float> = dataStore.data.map { it[keyVelUp] ?: GestureThresholds.DEFAULT_SWIPE_VEL_MIN_UP }
     val velDown: Flow<Float> = dataStore.data.map { it[keyVelDown] ?: GestureThresholds.DEFAULT_SWIPE_VEL_MIN_DOWN }
@@ -47,6 +50,9 @@ class SettingsRepository(context: Context) {
     val cursorPointingMode: Flow<Boolean> = dataStore.data.map { it[keyCursorPointingMode] ?: false }
     val gOpen: Flow<Float> = dataStore.data.map { it[keyGOpen] ?: GestureThresholds.DEFAULT_G_OPEN }
     val sysVelMin: Flow<Float> = dataStore.data.map { it[keySysVelMin] ?: GestureThresholds.DEFAULT_SYS_VEL_MIN }
+    val enableM1Swipe: Flow<Boolean> = dataStore.data.map { it[keyEnableM1Swipe] ?: true }
+    val enableM2Cursor: Flow<Boolean> = dataStore.data.map { it[keyEnableM2Cursor] ?: true }
+    val enableM5System: Flow<Boolean> = dataStore.data.map { it[keyEnableM5System] ?: true }
 
     suspend fun setVelUp(value: Float) = dataStore.edit { it[keyVelUp] = value }
     suspend fun setVelDown(value: Float) = dataStore.edit { it[keyVelDown] = value }
@@ -58,4 +64,7 @@ class SettingsRepository(context: Context) {
     suspend fun setCursorPointingMode(value: Boolean) = dataStore.edit { it[keyCursorPointingMode] = value }
     suspend fun setGOpen(value: Float) = dataStore.edit { it[keyGOpen] = value }
     suspend fun setSysVelMin(value: Float) = dataStore.edit { it[keySysVelMin] = value }
+    suspend fun setEnableM1Swipe(value: Boolean) = dataStore.edit { it[keyEnableM1Swipe] = value }
+    suspend fun setEnableM2Cursor(value: Boolean) = dataStore.edit { it[keyEnableM2Cursor] = value }
+    suspend fun setEnableM5System(value: Boolean) = dataStore.edit { it[keyEnableM5System] = value }
 }

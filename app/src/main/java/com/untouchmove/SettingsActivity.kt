@@ -87,6 +87,9 @@ private fun SettingsScreen(onBack: () -> Unit) {
     var pointingMode by remember { mutableStateOf(false) }
     var sensGOpen by remember { mutableFloatStateOf(0f) }
     var sensSysVelMin by remember { mutableFloatStateOf(0f) }
+    var enableM1 by remember { mutableStateOf(true) }
+    var enableM2 by remember { mutableStateOf(true) }
+    var enableM5 by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         launch {
@@ -139,6 +142,9 @@ private fun SettingsScreen(onBack: () -> Unit) {
                 sensSysVelMin = velocityToSensitivity(it, GestureThresholds.MIN_SYS_VEL_MIN, GestureThresholds.MAX_SYS_VEL_MIN)
             }
         }
+        launch { repository.enableM1Swipe.collect { enableM1 = it } }
+        launch { repository.enableM2Cursor.collect { enableM2 = it } }
+        launch { repository.enableM5System.collect { enableM5 = it } }
     }
 
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -151,6 +157,39 @@ private fun SettingsScreen(onBack: () -> Unit) {
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
+            SettingsSection(
+                title = "Bật/tắt từng cử chỉ",
+                description = "Tắt cử chỉ nào thì tay làm đúng tư thế đó cũng không kích hoạt gì.",
+            ) {
+                GestureToggleRow(
+                    label = "Lướt 2/3 ngón",
+                    checked = enableM1,
+                    onCheckedChange = { checked ->
+                        enableM1 = checked
+                        GestureThresholds.ENABLE_M1_SWIPE = checked
+                        scope.launch { repository.setEnableM1Swipe(checked) }
+                    },
+                )
+                GestureToggleRow(
+                    label = "Con trỏ ảo (click/giữ)",
+                    checked = enableM2,
+                    onCheckedChange = { checked ->
+                        enableM2 = checked
+                        GestureThresholds.ENABLE_M2_CURSOR = checked
+                        scope.launch { repository.setEnableM2Cursor(checked) }
+                    },
+                )
+                GestureToggleRow(
+                    label = "Cử chỉ hệ thống 4 ngón",
+                    checked = enableM5,
+                    onCheckedChange = { checked ->
+                        enableM5 = checked
+                        GestureThresholds.ENABLE_M5_SYSTEM = checked
+                        scope.launch { repository.setEnableM5System(checked) }
+                    },
+                )
+            }
+
             SettingsSection(
                 title = "Độ nhạy cử chỉ vuốt",
                 description = "Kéo sang phải = nhạy hơn (chỉ cần vẫy nhẹ là nhận).",
@@ -331,6 +370,18 @@ private fun SettingsSection(title: String, description: String? = null, content:
             if (description != null) Text(description, style = MaterialTheme.typography.bodySmall)
             content()
         }
+    }
+}
+
+@Composable
+private fun GestureToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, style = MaterialTheme.typography.titleMedium)
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 

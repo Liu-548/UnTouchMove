@@ -108,8 +108,12 @@ biệt loại trừ lẫn nhau** — tư thế đã quyết định sẵn trục
   qua (chuyển động chéo không tính).
 - **Ngưỡng vận tốc RIÊNG theo hướng** (yêu cầu người dùng 2026-09-20 sau khi
   test thật thấy độ nhạy lệch hẳn giữa các hướng do đặc điểm vận động tay):
-  `SWIPE_VEL_MIN_UP` (nhạy nhất), `SWIPE_VEL_MIN_DOWN` (trung bình),
-  `SWIPE_VEL_MIN_LEFT_RIGHT` (kém nhạy nhất, cần di chuyển xa hơn).
+  `SWIPE_VEL_MIN_UP`, `SWIPE_VEL_MIN_DOWN`, `SWIPE_VEL_MIN_LEFT`,
+  `SWIPE_VEL_MIN_RIGHT` — 4 ngưỡng độc lập (Trái/Phải tách riêng 2026-09-22,
+  trước đó dùng chung 1 ngưỡng `SWIPE_VEL_MIN_LEFT_RIGHT`).
+- **Bật/tắt riêng 2 ngón và 3 ngón** (2026-09-22): `ENABLE_M1_VERTICAL` (2
+  ngón) và `ENABLE_M1_HORIZONTAL` (3 ngón) là 2 cờ độc lập, trước đó dùng
+  chung 1 cờ `ENABLE_M1_SWIPE` cho cả 2 tư thế.
 
 ### 4.2 M2 — Con trỏ ảo
 
@@ -206,6 +210,41 @@ Chỉ tồn tại khi đang ở M2. Dùng chung logic với M3:
   **một hành động mỗi lần vào chế độ** — sau khi thực hiện, phải hủy rồi vào lại.
 - **Lưu ý gương**: camera trước lật ngang, phải đảo trục X trước khi ánh xạ
   trái/phải, nếu không back và đa nhiệm sẽ ngược nhau.
+
+### 4.6 M6 — Tắt màn hình bằng cử chỉ (thêm 2026-09-22)
+
+- **Chỉ hoạt động khi KHÔNG đang ở M2** (con trỏ ảo). Bật/tắt cả nhóm qua
+  `ENABLE_M6_SCREEN_OFF` (mặc định bật).
+- **Tư thế vào**: xoè cả 5 ngón (a,b,c,d,e đều dựng, giống trạng thái nghỉ ở
+  mục 4.0) và **giữ đứng yên** đủ `SCREEN_LOCK_ARM_HOLD_MS` (1000ms, dùng lại
+  cơ chế jitter giống ARMING các chế độ khác) — icon trạng thái chuyển màu
+  **cam** để báo "đã sẵn sàng".
+- **Kích hoạt**: sau khi icon cam, **nắm tay lại** (b,c,d,e đều gập, ngón cái
+  khép) → phát `GestureAction.ScreenOff`. Hành động này là tín hiệu TRỪU
+  TƯỢNG, lớp Service diễn giải thành 1 trong 2 cách tuỳ cờ
+  `ENABLE_SCREEN_OFF_REOPEN_GESTURE`:
+  - **Tắt (mặc định)**: khoá màn hình THẬT (`GLOBAL_ACTION_LOCK_SCREEN`,
+    giống bấm nút nguồn) — camera tự tắt theo đúng nguyên tắc chung (SPEC/
+    ARCHITECTURE mục 4), muốn mở lại phải bấm nguồn/vân tay như bình thường.
+  - **Bật**: KHÔNG khoá/tắt gì thật cả, chỉ **phủ 1 lớp màn đen** che kín màn
+    hình thật (`TYPE_ACCESSIBILITY_OVERLAY`, có nhận chạm để chặn thao tác
+    thật lên app bên dưới) — camera vẫn chạy bình thường xuyên suốt. **Nhấn
+    giữ (long-press) trực tiếp lên lớp màn đen cũng gỡ được ngay** — đường
+    thoát dự phòng bằng tay chạm thật, độc lập với cử chỉ nắm-rồi-xoè.
+  - Cả 2 cách đều **không tắt app, không tắt camera/service, không tắt thông
+    báo thường trú**.
+- **Huỷ trước khi kích hoạt**: rời khỏi tư thế 5 ngón mà không phải nắm tay
+  (vd hạ bớt 1-2 ngón), hoặc lệch vị trí quá `ARM_JITTER` trong lúc đang đếm
+  giờ, hoặc chuyển sang M2 — phải xoè lại từ đầu.
+- **Mở lại bằng cử chỉ** (CHỈ có tác dụng khi `ENABLE_SCREEN_OFF_REOPEN_GESTURE`
+  = bật, tức đang ở chế độ "phủ màn đen"): giữ nắm tay đủ
+  `SCREEN_OFF_REOPEN_HOLD_MS` (500ms) rồi xoè 5 ngón ra → phát
+  `GestureAction.ScreenOn` → gỡ lớp màn đen, xem lại màn hình bình thường
+  ngay (vì màn hình chưa từng tắt thật, không có khái niệm "đánh thức" hay
+  "mở khoá" ở đây).
+  - Xoè ra **trước khi đủ** `SCREEN_OFF_REOPEN_HOLD_MS` thì bị huỷ, không tính.
+  - Khi cờ này TẮT (mặc định, dùng khoá màn hình thật), không có cách mở lại
+    bằng cử chỉ — camera đã tắt theo màn hình nên không còn gì để nhận cử chỉ.
 
 ## 5. Kích hoạt và phản hồi
 

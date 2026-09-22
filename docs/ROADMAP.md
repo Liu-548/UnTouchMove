@@ -351,6 +351,40 @@ lại bằng các "viên thuốc" (rounded rect) rõ ràng hơn nhiều. Chi ti�
       cố định, cho nút tự giãn theo nội dung. Đã build + cài lên RMX3370,
       chụp ảnh xác nhận cả 3 màn hình (Main/Guide/Settings).
 
+**Cập nhật 2026-09-22**: người dùng báo đôi khi có 2 bàn tay lọt vào khung
+hình camera trước cùng lúc, gây nhận diện nhầm. `HandLandmarkerHelper` đổi
+`numHands` từ 1 lên 2 và tự chọn tay có khung bao lớn nhất (= gần camera
+nhất) để xử lý cử chỉ, các tay còn lại bị bỏ qua hoàn toàn — vẫn chỉ xử lý
+cử chỉ trên 1 tay như cũ, không phải tính năng nhận diện hai tay (mục 8
+CLAUDE.md vẫn hoãn đúng phần đó). Chi tiết: `docs/DECISIONS.md`.
+
+**Cập nhật 2026-09-22 (2)**: 3 yêu cầu người dùng trong 1 lần:
+- [x] Tách "Vuốt Trái/Phải" (3 ngón) thành 2 ngưỡng độ nhạy độc lập
+      (`SWIPE_VEL_MIN_LEFT`/`SWIPE_VEL_MIN_RIGHT`, trước dùng chung 1 ngưỡng)
+      và tách UI "Độ nhạy cử chỉ vuốt" thành 2 khối riêng (2 ngón / 3 ngón).
+- [x] Bật/tắt riêng 2 ngón và 3 ngón (`ENABLE_M1_VERTICAL`/`ENABLE_M1_HORIZONTAL`,
+      trước dùng chung 1 cờ `ENABLE_M1_SWIPE`).
+- [x] **Sửa lỗi thật**: tắt nhóm 4 ngón (M5) xong đưa 4 ngón lên đôi khi bị
+      nhận nhầm thành 3 ngón (M1 ngang). Nguyên nhân: `entryTargetOf` gate
+      việc NHẬN DIỆN tư thế M5 bằng `ENABLE_M5_SYSTEM` — tắt M5 vô tình làm
+      mất luôn tác dụng phụ "xét M5 trước để chặn `pose.e` dính giá trị DOWN
+      cũ lúc tay đang chuyển từ 3 sang 4 ngón" (đã có sẵn trong code, xem
+      comment gốc trên `isSystemClosedEntryPose`). Sửa: vẫn NHẬN DIỆN tư thế
+      M5 vô điều kiện, chỉ gate lúc QUYẾT ĐỊNH có kích hoạt hay không. Thêm
+      unit test tái hiện đúng khung hình trung gian gây lỗi.
+- [x] **Tính năng mới — M6**: xoè 5 ngón đứng yên 1s (icon chuyển cam) rồi
+      nắm tay lại = "tắt màn hình". Không hoạt động khi đang ở M2. Cờ
+      `ENABLE_M6_SCREEN_OFF`. Cờ `ENABLE_SCREEN_OFF_REOPEN_GESTURE` (mặc định
+      TẮT) chọn 2 cách tắt: TẮT = khoá màn hình thật (`GLOBAL_ACTION_LOCK_SCREEN`,
+      không mở lại được bằng cử chỉ); BẬT = chỉ phủ 1 lớp màn đen che kín
+      (không khoá/tắt gì thật, camera chạy bình thường xuyên suốt) — nắm tay
+      giữ 0,5s rồi xoè ra để gỡ lớp đen. Bản đầu tiên hiểu nhầm "phủ màn đen"
+      thành khoá màn hình thật (đã phải xin ngoại lệ CLAUDE.md mục 4.3) —
+      người dùng chỉnh lại đúng ý, bản sau không còn đụng gì đến CLAUDE.md
+      4.3 cả (camera không bao giờ tắt trong chế độ phủ màn đen). Xem
+      `docs/SPEC.md` mục 4.6 và `docs/DECISIONS.md` mục "M6" (có phần "sửa
+      lại") để biết đầy đủ và việc cần test trên máy thật.
+
 ## Phase 8 — Sau khi ổn định
 
 Xem `BACKLOG.md`.

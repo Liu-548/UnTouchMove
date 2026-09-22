@@ -97,7 +97,13 @@ nền**. Vì vậy:
 Manifest cần: `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CAMERA`, `CAMERA`,
 và `android:foregroundServiceType="camera"`. **Không** khai báo `INTERNET`.
 
-Khi màn hình tắt hoặc khóa: dừng phân tích khung hình, nhả camera.
+Khi màn hình tắt hoặc khóa: dừng phân tích khung hình, nhả camera. Nguyên tắc
+này KHÔNG có ngoại lệ nào — "tắt màn hình bằng cử chỉ" (M6, SPEC mục 4.6) khi
+cần cử chỉ mở lại chỉ PHỦ MỘT LỚP MÀN ĐEN che kín màn hình thật (qua
+`TYPE_ACCESSIBILITY_OVERLAY`, không khoá/tắt gì thật), nên không hề đụng đến
+vòng đời camera ở trên; chế độ khoá màn hình thật (`GLOBAL_ACTION_LOCK_SCREEN`)
+vẫn khiến camera tắt bình thường theo đúng nguyên tắc này. Xem DECISIONS.md
+mục "M6".
 
 ## 5. Hai service, tại sao
 
@@ -118,7 +124,14 @@ cho màn hình Debug), nhưng không bơm cử chỉ, và UI phải báo rõ.
   30–60cm. Không cần nét.
 - Nhịp mục tiêu: ~20fps trên GT Neo 2. Nếu đạt được 30fps thì tốt cho việc phát
   hiện tách/khép nhanh, nhưng ưu tiên **ổn định nhiệt** hơn là fps cao.
-- Chỉ theo dõi **một tay** (`numHands = 1`), chọn tay thuận trong cài đặt.
+- Cử chỉ chỉ xử lý trên **một tay** tại một thời điểm. MediaPipe được phép
+  thấy tối đa 2 tay (`numHands = 2`, tăng từ 1 ngày 2026-09-22 — trên máy
+  thật đôi khi có 2 tay lọt vào khung hình cùng lúc); `HandLandmarkerHelper`
+  tự chọn tay có khung bao (bounding box) lớn nhất trong các tay MediaPipe
+  thấy được — tay gần camera trước hơn thì chiếm diện tích khung hình lớn
+  hơn, nên đây cũng chính là tay gần màn hình nhất. "Chọn tay thuận" (trái/
+  phải qua cài đặt) vẫn CHƯA làm — có thể lớp thêm sau như một tiêu chí ưu
+  tiên khi cần, không thay thế bước chọn theo kích thước này.
 - Camera trước bị lật gương: nhãn trái/phải của MediaPipe cũng bị đảo. Xử lý tập
   trung ở một chỗ duy nhất trong `HandLandmarkerHelper`, không rải rác.
 

@@ -1277,3 +1277,199 @@ riêng, không lẫn vào cùng 1 thay đổi vì không liên quan logic bật/
 **Cần test trên máy thật**: tắt từng nhóm rồi thử đúng tư thế vào của nhóm
 đó xem có thật sự im lặng không, và tắt/bật lại nhiều lần xem
 `SettingsScreen` có đọc đúng giá trị đã lưu khi mở lại màn hình không.
+
+## 2026-09-22 — Chọn tay chính khi có nhiều tay trong khung hình
+**Chọn**: `HandLandmarkerHelper.setNumHands(1)` đổi thành `2`, thêm
+`selectPrimaryHandIndex()` — chọn tay có khung bao (bounding box, tính từ
+toạ độ normalized x/y) diện tích lớn nhất trong các tay MediaPipe thấy
+được, rồi CHỈ lấy landmarks/confidence của đúng tay đó đưa vào
+`GestureStateMachine` như trước giờ (vẫn xử lý cử chỉ trên 1 tay duy nhất,
+tay còn lại bị bỏ hẳn, không merge/không luân phiên).
+**Vì**: người dùng báo trên máy thật đôi khi 2 bàn tay lọt vào khung hình
+cùng lúc (vd tay kia đang cầm máy hoặc nghỉ trong khung), trước đây
+`numHands=1` khiến MediaPipe có thể khoá vào tay không phải tay đang ra cử
+chỉ. Yêu cầu rõ: ưu tiên tay "lớn nhất hoặc gần màn hình nhất". Dùng diện
+tích bounding box vì tay càng gần camera trước thì càng chiếm nhiều diện
+tích khung hình — không cần ước lượng độ sâu thật (không đáng tin từ 1
+camera RGB), 1 phép đo bounding box giải quyết được cả 2 cách diễn đạt
+("lớn nhất" và "gần nhất") cùng lúc.
+**Đã loại**: không dùng toạ độ `z` của world landmarks để so khoảng cách —
+MediaPipe không đảm bảo `z` đáng tin cậy giữa các tay khác nhau (chỉ hiệu
+chỉnh tương đối trong 1 tay), bounding box theo x/y ổn định hơn nhiều.
+Không làm luôn "chọn tay thuận" (SPEC mục 7, vẫn ghi trong ROADMAP Phase 7
+là "chưa làm") — đó là lọc theo nhãn trái/phải người dùng chọn qua Cài đặt,
+khác cơ chế và khác input (`handedness()` chứ không phải kích thước); có
+thể lớp thêm sau làm tiêu chí ưu tiên phụ, không lẫn vào thay đổi này.
+**Đánh đổi**: `numHands=2` khiến MediaPipe tính toán nhiều hơn mỗi khung so
+với `numHands=1` — chưa đo lại fps trên GT Neo 2 (mốc dưới hiệu năng) sau
+thay đổi này.
+**Cần test trên máy thật**: (1) đưa 2 tay vào khung hình cùng lúc, xác nhận
+app chỉ theo tay lớn hơn/gần hơn và không bị nhảy cử chỉ lung tung khi tay
+kia cử động; (2) đổi tay nào "lớn hơn" giữa chừng (vd đưa tay kia lại gần
+hơn) xem app có chuyển theo tay mới mượt hay bị giật/lag; (3) đo lại fps
+thực tế trên RMX3370 xem `numHands=2` có làm giảm rõ rệt so với trước
+không — nếu giảm nhiều, cân nhắc quay về xử lý riêng biệt custom NMS thay
+vì tăng `numHands`.
+
+## 2026-09-22 (2) — Bật/tắt riêng 2/3 ngón, sửa lỗi nhận nhầm M5→M1, thêm M6 tắt màn hình
+
+**Bật/tắt riêng 2 ngón / 3 ngón**: đổi `ENABLE_M1_SWIPE` (1 cờ) thành
+`ENABLE_M1_VERTICAL` + `ENABLE_M1_HORIZONTAL` (2 cờ độc lập), theo đúng yêu
+cầu người dùng. Tương tự tách `SWIPE_VEL_MIN_LEFT_RIGHT` thành
+`SWIPE_VEL_MIN_LEFT`/`SWIPE_VEL_MIN_RIGHT` (2 thanh trượt riêng trong Cài đặt).
+
+**Sửa lỗi "tắt 4 ngón xong đưa 4 ngón lên vẫn bị nhận nhầm thành 3 ngón"**:
+nguyên nhân gốc nằm ở `GestureStateMachine.entryTargetOf` — code gốc đã có
+sẵn 1 cơ chế chống nhầm (xét tư thế M5 TRƯỚC M1 ngang, xem comment cũ trên
+`isSystemClosedEntryPose`): ngón út (e) thường "dính" giá trị DOWN cũ trong
+Voter khi tay đang chuyển động từ 3 ngón sang 4 ngón (r_e rơi vào "vùng xám"
+0.65-0.90 của ngưỡng e thường, không đủ để Voter ghi đè AMBIGUOUS lên DOWN
+cũ, nhưng đã vượt `SYSTEM_E_UP_RELAXED=0.78` nên `eUpRelaxed` đọc UP ngay).
+Trước đây `entryTargetOf` gate việc NHẬN DIỆN tư thế M5 bằng
+`ENABLE_M5_SYSTEM && isSystemXEntryPose(...)` — tắt M5 làm code bỏ qua hẳn
+bước nhận diện này, mất luôn tác dụng chống nhầm, nên rơi thẳng xuống nhánh
+kiểm tra M1 ngang (chỉ dựa vào `pose.e` thường, đang dính DOWN) và khớp.
+**Sửa**: tách "nhận diện tư thế M5" ra khỏi "cờ bật/tắt" — luôn nhận diện tư
+thế M5 trước (dù M5 đang tắt), chỉ dùng cờ để quyết định có TRẢ VỀ
+`ArmTarget.System` hay `null`. Nhận diện được tư thế M5 (dù tắt) thì trả
+`null` luôn (không rơi tiếp xuống M1), đúng ý người dùng "tắt 4 ngón thì 4
+ngón không làm gì cả, không lẫn qua 3 ngón". Thêm unit test
+`tat M5 thi tu the trung gian 3-sang-4-ngon khong duoc nham thanh M1 ngang`
+tái hiện đúng chuỗi khung hình gây lỗi (ổn định pose 3-ngón thật trước, rồi
+đưa ngón út vào đúng vùng xám r_e≈0.8) — test này FAIL nếu bỏ phần sửa, xác
+nhận đúng nguyên nhân.
+**Không làm**: không đổi ngưỡng `SYSTEM_E_UP_RELAXED`/`R_UP`/`R_DOWN` — lỗi
+nằm ở LOGIC gate, không phải ở ngưỡng đo.
+
+## M6 — Tắt màn hình bằng cử chỉ (yêu cầu người dùng 2026-09-22)
+
+**Yêu cầu gốc**: "khi không trong trạng thái con trỏ, nếu dơ 5 ngón tay lên
+rồi nắm tay lại (focus 5 ngón 1 màu riêng, vd cam) thì tắt màn hình (chỉ tắt
+màn hình, không tắt gì khác); trong lúc tắt nếu bắt được nắm tay 0,5s rồi
+xoè 5 ngón ra thì mở lại màn hình".
+
+**Xung đột phát hiện trước khi code (lần đầu)**: `GestureForegroundService`
+từ trước đã tắt camera ngay khi màn hình tắt (`ACTION_SCREEN_OFF -> stopCamera()`),
+đúng theo CLAUDE.md mục 4.3. Phần "mở lại bằng cử chỉ" ban đầu tưởng là cần
+camera chạy tiếp SAU KHI đã khoá màn hình thật — đã hỏi người dùng trước khi
+code. **Sửa lại ngay sau đó (cùng ngày)**: người dùng chỉ rõ "phiên bản 2"
+KHÔNG phải khoá màn hình thật, mà là **phủ 1 lớp màn đen** che kín, không ai
+nhìn được gì — bản đầu tiên (dùng `GLOBAL_ACTION_LOCK_SCREEN` + giữ camera
+chạy thêm có giới hạn 15s) đã bị **bỏ hẳn**, viết lại theo thiết kế dưới đây.
+Xoá bỏ luôn: `awaitingReopenGesture`/`reopenWatchJob` trong
+`GestureForegroundService`, `SCREEN_OFF_REOPEN_WINDOW_MS`, quyền `WAKE_LOCK`
+và `UnTouchAccessibilityService.performScreenOn` (PowerManager wake lock) -
+không còn cần thiết.
+
+**Thiết kế đã chọn (bản sửa)**: `GestureAction.ScreenOff`/`ScreenOn` là tín
+hiệu TRỪU TƯỢNG từ `GestureStateMachine`, không tự mang ý nghĩa "khoá" hay
+"phủ đen" - lớp Service mới là nơi diễn giải, theo đúng 1 cờ
+`ENABLE_SCREEN_OFF_REOPEN_GESTURE` (mặc định **TẮT**):
+- **Tắt (mặc định, "phiên bản 1")**: `ActionDispatcher.globalAction(GLOBAL_ACTION_LOCK_SCREEN)`
+  — khoá màn hình THẬT như bấm nút nguồn, camera tắt theo `ACTION_SCREEN_OFF`
+  như bình thường (KHÔNG có ngoại lệ nào với CLAUDE.md mục 4.3 nữa). Mở lại
+  phải bấm nguồn/vân tay như bình thường, không có cử chỉ mở lại.
+- **Bật ("phiên bản 2")**: `ActionDispatcher.showBlackCurtain()` —
+  `OverlayRenderer` vẽ 1 `View` nền đen phủ kín `MATCH_PARENT` bằng
+  `TYPE_ACCESSIBILITY_OVERLAY` (đúng CLAUDE.md mục 4.2, không dùng
+  `SYSTEM_ALERT_WINDOW`), CÓ nhận chạm (không đặt `FLAG_NOT_TOUCHABLE`) để
+  chặn luôn thao tác thật lên app bên dưới, giống cảm giác màn hình thật sự
+  không dùng được. Màn hình/khoá thật KHÔNG hề đụng tới, camera chạy bình
+  thường xuyên suốt — nên **không còn xung đột gì với CLAUDE.md mục 4.3 cả**,
+  không cần ngoại lệ, không cần giới hạn thời gian nào. Mở lại: nắm tay đủ
+  `SCREEN_OFF_REOPEN_HOLD_MS` rồi xoè ra → `GestureAction.ScreenOn` →
+  `ActionDispatcher.hideBlackCurtain()`, gỡ lớp đen ngay lập tức.
+**Vì**: đơn giản hơn hẳn bản đầu (không còn quản lý vòng đời camera đặc
+biệt, không cần đo/đoán thời gian chờ, không cần quyền `WAKE_LOCK`), và giải
+quyết được đúng cái người dùng mô tả ("giống như phủ lên màn hình 1 lớp màn
+đen không ai nhìn được gì") thay vì suy diễn sai thành khoá màn hình thật.
+
+**Tư thế "nắm tay"**: tái dùng field có sẵn trong `StablePose` (b,c,d,e đều
+DOWN, thumb IN) — không cần đo/thêm Feature mới, đối lập trực tiếp với
+`allFiveUp` đã có sẵn.
+
+**Đã loại**: không còn cân nhắc Device Admin / `lockNow()` để "tắt màn hình
+mà không khoá bảo mật thật" — câu hỏi đó chỉ đặt ra khi hiểu nhầm "phiên bản
+2" là biến thể của khoá màn hình thật; với thiết kế phủ màn đen, không có gì
+cần bỏ qua bảo mật cả (màn hình chưa từng khoá).
+
+**Màu cam cho trạng thái "sẵn sàng"**: `DisplayState.SCREEN_LOCK_ARMED`,
+`Color.rgb(255, 140, 0)` trong `OverlayRenderer` - không trùng màu nào đang
+dùng cho M1/M2/M5. Không đổi so với bản đầu.
+
+**Đánh đổi UX đã biết + xác nhận qua unit test**: bàn tay "rảnh" (xoè 5 ngón,
+trước đây hoàn toàn không hiện icon) giờ sẽ hiện icon xám (ARMING) sau khi
+giữ, rồi cam sau 1 giây, MIỄN LÀ `ENABLE_M6_SCREEN_OFF` đang bật (mặc định).
+2 unit test cũ (`khong kich hoat M1-M2-M5 khi 5 ngon mo`, test thoát M2 bằng
+xoè 5 ngón) đã cập nhật assertion từ `NONE` sang `ARMING` cho đúng hành vi
+mới - đây là thay đổi có chủ đích (icon cam CHÍNH LÀ tính năng được yêu cầu),
+không phải hồi quy. `GestureStateMachine` không đổi gì giữa 2 bản thiết kế
+(không biết/không cần biết Service diễn giải ScreenOff thế nào) - chỉ có lớp
+Service/overlay thay đổi.
+
+**Cần test trên máy thật (RMX3370)**:
+1. Xoè 5 ngón giữ yên đúng 1 giây xem icon có chuyển cam đúng lúc không (quá
+   sớm/quá trễ so với cảm giác), rồi nắm tay xem có kích hoạt được không.
+2. Cờ TẮT (mặc định): nắm tay xem màn hình có khoá thật được không.
+3. Cờ BẬT: nắm tay xem màn hình có bị phủ đen kín hoàn toàn không (có góc/
+   viền nào lộ ra không, có che được cả thanh trạng thái/thanh điều hướng
+   không), chạm thử lên màn đen xem có lọt thao tác xuống app bên dưới
+   không, rồi thử nắm tay 0,5s + xoè ra xem có gỡ được lớp đen ngay không.
+4. Xác nhận tư thế "nắm tay" không bị lẫn với lúc tay đang thu vào/ra khỏi
+   khung hình camera (chuyển động tự nhiên khi rút tay ra cũng có thể đi qua
+   tư thế nắm hờ).
+5. Nhấn giữ lên lớp màn đen xem có gỡ ra ngay không.
+
+**Sửa lại (2026-09-22 (2))**: người dùng báo "không yêu cầu khoá chạm màn
+hình như vậy, nhấn giữ vô màn hình vẫn phải mở ra như thường" - trước đó lớp
+màn đen nuốt mọi thao tác chạm mà không có phản hồi gì (coi như "khoá chết"
+nếu camera không bắt được cử chỉ). Thêm `GestureDetector.onLongPress` ngay
+trên `View` của lớp màn đen (`OverlayRenderer.showBlackCurtain`) - nhấn giữ
+(mặc định ViewConfiguration long-press timeout, ~500ms, không cần tự đặt
+ngưỡng riêng) sẽ gỡ lớp đen ngay lập tức, độc lập hoàn toàn với luồng cử chỉ
+tay (không đụng `GestureStateMachine`/`screenLockState`) - đây là đường
+THOÁT DỰ PHÒNG bằng tay chạm thật, không phải thay thế cử chỉ. Vẫn giữ chặn
+chạm thường (tap/vuốt) lên app bên dưới - chỉ riêng NHẤN GIỮ mới có tác dụng
+gỡ màn đen.
+
+**Sửa lại (2026-09-22 (3))**: người dùng hỏi "có phủ được cả thanh thông báo
+không" - `MATCH_PARENT` một mình không đủ, cửa sổ bị giới hạn trong vùng nội
+dung (chừa thanh trạng thái/thanh điều hướng lộ ra ngoài lớp đen). Thêm
+`FLAG_LAYOUT_NO_LIMITS` (kèm `FLAG_LAYOUT_IN_SCREEN` đã có) để cửa sổ tràn ra
+đúng cả 2 thanh hệ thống, và `layoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS`
+(API 28+) để tràn luôn vào vùng tai thỏ/notch trên máy có. **Lưu ý còn lại**:
+đây chỉ là phủ HÌNH ẢNH - vuốt xuống từ mép trên vẫn có thể kéo được thanh
+thông báo thật của hệ thống ra ĐÈ LÊN lớp đen (không có cách nào chặn cử chỉ
+hệ thống này từ 1 overlay thường, cần quyền nặng hơn hẳn nếu muốn chặn) - cần
+người dùng xác nhận trên máy thật xem có chấp nhận được không.
+
+**Sửa lại (2026-09-22 (4))**: người dùng báo "quá khó để ghi nhận nắm bàn tay
+lại". `isFistPose` đổi 2 chỗ:
+1. **Bỏ điều kiện ngón cái** (`thumb == IN`) - dữ liệu đo thật ở nơi khác
+   trong file này đã ghi nhận góc xoè ngón cái KHÔNG tách biệt rõ giữa các tư
+   thế (xem comment `T_OUT`/`T_IN`), đòi thêm điều kiện này chỉ làm khó kích
+   hoạt hơn mà không chắc tăng độ chính xác - riêng 4 ngón (b,c,d,e) cùng gập
+   đã đủ đặc trưng, không tư thế M1/M2/M5 nào khác có cả 4 ngón gập cùng lúc.
+2. **Đổi từ đọc `pose.b/c/d/e` (đã qua Voter, cần 4/5 khung ĐỒNG THUẬN cho
+   CẢ 4 Voter độc lập cùng lúc) sang đọc thẳng `features.rB/rC/rD/rE`** (giá
+   trị thô từng khung) với ngưỡng riêng `FIST_R_DOWN=0.80` (rộng hơn hẳn
+   `R_DOWN=0.65` thường). Lý do: nắm tay thật (đặc biệt lúc đầu ngón tay bị
+   che khuất trong lòng bàn tay) bị MediaPipe đọc nhiễu hơn các tư thế "gập"
+   khác, khiến 4 Voter độc lập khó đồng thuận đúng lúc cùng nhau - kiểm tra
+   trực tiếp từng khung phản hồi nhanh hơn hẳn, đổi lấy việc mất lớp làm mượt
+   (vote) vốn không thật cần thiết ở đây (fist là tư thế khác biệt rõ, không
+   nằm gần ranh giới với tư thế nào khác).
+   - **Tác dụng phụ phải sửa kèm**: `WaitingReopenFist`/`WaitingReopenReady`
+     trước đó dùng `pose.allFiveUp` (qua Voter) để xét "đã xoè ra chưa" - vì
+     Voter vẫn còn "dính" giá trị UP vài khung sau khi tay vừa nắm xong (lúc
+     `isFistPose` mới kích hoạt tức thì từ giá trị thô), dùng `pose.allFiveUp`
+     ngay sau đó sẽ đọc nhầm là "đã xoè" và huỷ ngay lập tức - lỗi này bị unit
+     test `bat cong tac mo lai...` bắt được (assert `ScreenOn` nhưng ra
+     `null`). Thêm hàm đối xứng `isOpenPose(features)` (thô, ngưỡng `R_UP`),
+     dùng thay `pose.allFiveUp` CHỈ trong 2 trạng thái này - đoạn "xoè 5 ngón
+     giữ yên 1s để vào `ArmedOff`" (trước khi tắt) vẫn giữ nguyên
+     `pose.allFiveUp` như cũ, không đổi (chưa ai báo phần đó khó).
+**Cần test trên máy thật**: nắm tay xem có dễ ghi nhận hơn hẳn không, và thử
+xem có bị NHẬN NHẦM thành nắm tay lúc KHÔNG có ý định đó không (vd tay đang
+thu về/rút ra khỏi khung hình, hoặc lúc chuyển động nhanh qua tư thế nắm hờ)
+- ngưỡng `FIST_R_DOWN=0.80` là số đoán, chưa có dữ liệu đo thật.

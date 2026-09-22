@@ -113,9 +113,17 @@ object GestureThresholds {
     const val DEFAULT_SWIPE_VEL_MIN_DOWN = 0.25f
     const val MIN_SWIPE_VEL_MIN_DOWN = 0.05f
     const val MAX_SWIPE_VEL_MIN_DOWN = 0.6f
-    const val DEFAULT_SWIPE_VEL_MIN_LEFT_RIGHT = 0.3f
-    const val MIN_SWIPE_VEL_MIN_LEFT_RIGHT = 0.1f
-    const val MAX_SWIPE_VEL_MIN_LEFT_RIGHT = 1.0f
+    // Tach LEFT/RIGHT thanh 2 nguong doc lap (yeu cau nguoi dung 2026-09-22:
+    // "tach thanh nhay trai/phai thanh 2 thanh rieng") - truoc day dung chung
+    // 1 nguong SWIPE_VEL_MIN_LEFT_RIGHT cho ca 2 huong. Gia tri mac dinh/khoang
+    // giu nguyen nhu cu cho ca 2 huong, nguoi dung tu chinh lech nhau qua Cai
+    // dat neu can (vd tay thuan mot ben nhay hon ben kia).
+    const val DEFAULT_SWIPE_VEL_MIN_LEFT = 0.3f
+    const val MIN_SWIPE_VEL_MIN_LEFT = 0.1f
+    const val MAX_SWIPE_VEL_MIN_LEFT = 1.0f
+    const val DEFAULT_SWIPE_VEL_MIN_RIGHT = 0.3f
+    const val MIN_SWIPE_VEL_MIN_RIGHT = 0.1f
+    const val MAX_SWIPE_VEL_MIN_RIGHT = 1.0f
 
     // Do nhay MediaPipe nhan dien tay/ngon tay (yeu cau nguoi dung 2026-09-20).
     // Dung chung cho ca 3 nguong cua HandLandmarker (detection/presence/
@@ -145,7 +153,8 @@ object GestureThresholds {
     // ngay khong can khoi dong lai pipeline.
     var SWIPE_VEL_MIN_UP = DEFAULT_SWIPE_VEL_MIN_UP
     var SWIPE_VEL_MIN_DOWN = DEFAULT_SWIPE_VEL_MIN_DOWN
-    var SWIPE_VEL_MIN_LEFT_RIGHT = DEFAULT_SWIPE_VEL_MIN_LEFT_RIGHT
+    var SWIPE_VEL_MIN_LEFT = DEFAULT_SWIPE_VEL_MIN_LEFT
+    var SWIPE_VEL_MIN_RIGHT = DEFAULT_SWIPE_VEL_MIN_RIGHT
 
     // Lam moc chung cho SWIPE_REST_VEL_MAX (ben duoi) khi can 1 gia tri duy
     // nhat - KHONG con dung truc tiep de xet nguong vuot trong M1 nua (xem
@@ -245,7 +254,46 @@ object GestureThresholds {
     // chi", ROADMAP Phase 7). Chinh qua Cai dat (SettingsScreen.kt +
     // data/SettingsRepository.kt), xet o GestureStateMachine.entryTargetOf -
     // nhom dang tat thi khong vao duoc che do do, cac nhom khac khong anh huong.
-    var ENABLE_M1_SWIPE = true
+    // M1 tach thanh 2 co RIENG cho 2 ngon (Len/Xuong) va 3 ngon (Trai/Phai)
+    // (yeu cau nguoi dung 2026-09-22: "thieu bat tat 2 ngon, 3 ngon rieng
+    // biet") - truoc day dung chung 1 co ENABLE_M1_SWIPE cho ca 2 tu the.
+    var ENABLE_M1_VERTICAL = true
+    var ENABLE_M1_HORIZONTAL = true
     var ENABLE_M2_CURSOR = true
     var ENABLE_M5_SYSTEM = true
+
+    // M6: xoe 5 ngon dung yen roi nam tay lai -> tat man hinh (yeu cau nguoi
+    // dung 2026-09-22). CHI hoat dong khi KHONG dang o M2 (con tro), xem
+    // GestureStateMachine.updateScreenLock.
+    var ENABLE_M6_SCREEN_OFF = true
+    // Phai xoe 5 ngon DUNG YEN (nhu ARM_JITTER cac che do khac) du lau nay
+    // moi duoc coi la "san sang" (hien mau cam) truoc khi nam tay duoc tinh -
+    // tranh tat man hinh nham luc tay chi luot qua tu the 5 ngon.
+    const val SCREEN_LOCK_ARM_HOLD_MS = 1000L
+    // Nguong rieng cho "nam tay" (GestureStateMachine.isFistPose) - LONG hon
+    // R_DOWN=0.65 thuong. Yeu cau nguoi dung 2026-09-22: "qua kho de ghi nhan
+    // nam ban tay lai" - nam tay can CA 4 ngon (rB/rC/rD/rE) cung luc duoi
+    // nguong, khac han cac tu the khac chi can 1-2 ngon gap, nen can nguong
+    // rong hon de du 4 ngon deu "kip" duoi nguong trong cung 1 khung (dac
+    // biet dau ngon tay hay bi MediaPipe doc kem chinh xac hon khi bi che
+    // khuat trong long ban tay luc nam chat).
+    // TODO(untouch): 0.80 la so doan (rong hon R_DOWN kha nhieu nhung van
+    // duoi han R_UP=0.90), CHUA co du lieu do that tren tay nam that - can
+    // nguoi dung xac nhan lai xem da du de nam de hay chua, hoac con qua de
+    // nham voi cac tu the khac khong (chua ghi nhan truong hop nao).
+    const val FIST_R_DOWN = 0.80f
+
+    // "Phien ban 2" (yeu cau nguoi dung 2026-09-22): quyet dinh CACH "tat man
+    // hinh" hoat dong.
+    // false (mac dinh, "phien ban 1"): khoa man hinh THAT (GLOBAL_ACTION_LOCK_SCREEN,
+    // giong bam nut nguon) - camera se tu tat theo dung CLAUDE.md muc 4.3,
+    // KHONG mo lai duoc bang cu chi (phai bam nguon/van tay nhu binh thuong).
+    // true ("phien ban 2"): CHI phu 1 lop MAN DEN che kin man hinh
+    // (OverlayRenderer.showBlackCurtain), KHONG khoa/tat gi that ca - camera
+    // van chay BINH THUONG xuyen suot (khong dung den CLAUDE.md muc 4.3 chut
+    // nao, vi man hinh khong he tat that), nen nam tay du
+    // SCREEN_OFF_REOPEN_HOLD_MS roi xoe ra bat ky luc nao se go duoc lop den.
+    // Xem GestureForegroundService.dispatch va DECISIONS.md muc "M6".
+    var ENABLE_SCREEN_OFF_REOPEN_GESTURE = false
+    const val SCREEN_OFF_REOPEN_HOLD_MS = 500L
 }

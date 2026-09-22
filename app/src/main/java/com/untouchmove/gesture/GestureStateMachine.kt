@@ -11,7 +11,7 @@ import kotlin.math.abs
  * - M5_CLOSED (4 ngon khep) vs M5_SPREAD (4 ngon tach), lan 12: "sua luon
  *   ca 2 dang 4 ngon" - cung ly do, truoc day ca 2 deu chung DisplayState.M5.
  */
-enum class DisplayState { NONE, ARMING, M1_VERTICAL, M1_HORIZONTAL, M2, M5_CLOSED, M5_SPREAD }
+enum class DisplayState { NONE, ARMING, M1_VERTICAL, M1_HORIZONTAL, M2, M5_CLOSED, M5_SPREAD, SCREEN_LOCK_ARMED }
 
 /**
  * Trang thai/hanh dong hien tai cua con tro trong M2 - CHI dung DE HIEN THI
@@ -162,29 +162,57 @@ private sealed class InternalState {
 }
 
 /**
+ * M6 (yeu cau nguoi dung 2026-09-22): xoe 5 ngon dung yen roi nam tay lai ->
+ * tat man hinh; nam tay du lau roi xoe ra (khi man hinh dang tat) -> mo lai.
+ * Vong DOC LAP voi InternalState chinh (khong lien quan tu the M1/M2/M5), xem
+ * GestureStateMachine.updateScreenLock.
+ */
+private sealed class ScreenLockState {
+    object Idle : ScreenLockState()
+
+    /** Da xoe 5 ngon, dang doi du SCREEN_LOCK_ARM_HOLD_MS dung yen. */
+    data class ArmingOff(val startTimeMs: Long, val anchorP: Point3D) : ScreenLockState()
+
+    /** Da dung yen du lau (mau cam) - nam tay lai luc nay se tat man hinh. */
+    object ArmedOff : ScreenLockState()
+
+    /** Vua tat man hinh, tay dang nam - doi du SCREEN_OFF_REOPEN_HOLD_MS. */
+    data class WaitingReopenFist(val fistStartMs: Long) : ScreenLockState()
+
+    /** Da nam du lau - xoe 5 ngon ra luc nay se mo lai man hinh. */
+    object WaitingReopenReady : ScreenLockState()
+}
+
+/**
  * May trang thai cu chi, thuan Kotlin, khong phu thuoc Android (ARCHITECTURE
  * muc 2). Nhan vao tung HandFrame, tra ra GestureAction? neu co cu chi can
  * bom ra ngoai. Co trang thai (ARMING timer, cooldown, vi tri khung truoc) -
  * moi tay dang theo doi dung 1 instance rieng.
  *
- * Da co M1-M5 (Phase 3-6).
+ * Da co M1-M5 (Phase 3-6), M6 (Phase 8).
  */
 class GestureStateMachine {
     private val poseClassifier = PoseClassifier()
     private var state: InternalState = InternalState.Idle
+    private var screenLockState: ScreenLockState = ScreenLockState.Idle
 
     val displayState: DisplayState
-        get() = when (val s = state) {
-            is InternalState.Idle -> DisplayState.NONE
-            is InternalState.Arming -> DisplayState.ARMING
-            is InternalState.SwipeActive -> when (s.mode) {
-                SwipeAxisMode.VERTICAL -> DisplayState.M1_VERTICAL
-                SwipeAxisMode.HORIZONTAL -> DisplayState.M1_HORIZONTAL
-            }
-            is InternalState.CursorActive -> DisplayState.M2
-            is InternalState.SystemActive -> when (s.mode) {
-                SystemPoseMode.CLOSED -> DisplayState.M5_CLOSED
-                SystemPoseMode.SPREAD -> DisplayState.M5_SPREAD
+        get() {
+            val sl = screenLockState
+            if (sl is ScreenLockState.ArmingOff) return DisplayState.ARMING
+            if (sl is ScreenLockState.ArmedOff) return DisplayState.SCREEN_LOCK_ARMED
+            return when (val s = state) {
+                is InternalState.Idle -> DisplayState.NONE
+                is InternalState.Arming -> DisplayState.ARMING
+                is InternalState.SwipeActive -> when (s.mode) {
+                    SwipeAxisMode.VERTICAL -> DisplayState.M1_VERTICAL
+                    SwipeAxisMode.HORIZONTAL -> DisplayState.M1_HORIZONTAL
+                }
+                is InternalState.CursorActive -> DisplayState.M2
+                is InternalState.SystemActive -> when (s.mode) {
+                    SystemPoseMode.CLOSED -> DisplayState.M5_CLOSED
+                    SystemPoseMode.SPREAD -> DisplayState.M5_SPREAD
+                }
             }
         }
 
@@ -216,6 +244,14 @@ class GestureStateMachine {
      */
     fun onHandLost(): GestureAction? {
         val s = state
+        // Dang cho cu chi mo lai (man hinh dang bi phu den) - KHONG huy chi vi
+        // mat tay thoang qua (vd tay ra ngoai khung hinh 1 chut) - huy o day
+        // se lam tinh nang mo lai gan nhu vo dung. Camera van chay binh
+        // thuong xuyen suot (xem GestureThresholds.ENABLE_SCREEN_OFF_REOPEN_GESTURE),
+        // khong co gioi han thoi gian nao can lo o day.
+        if (screenLockState !is ScreenLockState.WaitingReopenFist && screenLockState !is ScreenLockState.WaitingReopenReady) {
+            screenLockState = ScreenLockState.Idle
+        }
         if (s is InternalState.CursorActive) {
             if (s.holding) {
                 state = s.copy(holding = false, separatedAtMs = null, holdBlockedUntilClose = false)
@@ -232,6 +268,9 @@ class GestureStateMachine {
             ?: return null
         val pose = poseClassifier.classify(features)
         val now = frame.timestampMs
+
+        val screenLockAction = updateScreenLock(pose, features, now, cursorActive = state is InternalState.CursorActive)
+        if (screenLockAction != null) return screenLockAction
 
         if (pose.allFiveUp) {
             // SPEC muc 4.0: tay ranh, khong kich hoat gi bat ke dang o dau.
@@ -361,8 +400,12 @@ class GestureStateMachine {
         if (s.mode == SwipeAxisMode.VERTICAL && dominantIsX) return null
         if (s.mode == SwipeAxisMode.HORIZONTAL && !dominantIsX) return null
 
+        // dominantIsX da xac dinh o tren; velX > 0 = tay dua sang TRAI (xem
+        // comment "direction" ben duoi) - dung dung chieu do de chon nguong
+        // TRAI/PHAI truoc khi tinh direction, tranh trung lap logic.
         val velMinForDirection = when {
-            s.mode == SwipeAxisMode.HORIZONTAL -> GestureThresholds.SWIPE_VEL_MIN_LEFT_RIGHT
+            dominantIsX && velX > 0 -> GestureThresholds.SWIPE_VEL_MIN_LEFT
+            dominantIsX -> GestureThresholds.SWIPE_VEL_MIN_RIGHT
             velY > 0 -> GestureThresholds.SWIPE_VEL_MIN_UP
             else -> GestureThresholds.SWIPE_VEL_MIN_DOWN
         }
@@ -648,11 +691,21 @@ class GestureStateMachine {
      * dinh (0.8 >= SYSTEM_E_UP_RELAXED=0.78, luon co phieu UP that moi khung)
      * - xet System truoc de no "thang" duoc truoc khi pose.e cu kip gay nham.
      */
+    // QUAN TRONG (loi thuc te bao 2026-09-22: "tat 4 ngon nhung dua 4 ngon len
+    // lai vo tinh kich hoat 3 ngon"): phai xet isSystemSpreadEntryPose/
+    // isSystemClosedEntryPose TRUOC va KHONG DUOC gate boi ENABLE_M5_SYSTEM o
+    // dieu kien if - neu gate o day, tat M5 se lam mat luon tac dung "xet M5
+    // truoc" da giai thich o comment tren isSystemClosedEntryPose (chan
+    // pose.e dinh gia tri DOWN cu luc tay dang chuyen tu 3 sang 4 ngon, khien
+    // isHorizontalEntryPose nham khop). Thay vao do: nhan dien tu the M5
+    // truoc (du bat/tat), roi MOI quyet dinh tra ArmTarget hay null theo co
+    // ENABLE_M5_SYSTEM - vua giu duoc thu tu chong nham, vua khong kich hoat
+    // M5 that su khi nguoi dung da tat.
     private fun entryTargetOf(pose: StablePose): ArmTarget? = when {
-        GestureThresholds.ENABLE_M5_SYSTEM && isSystemSpreadEntryPose(pose) -> ArmTarget.System(SystemPoseMode.SPREAD)
-        GestureThresholds.ENABLE_M5_SYSTEM && isSystemClosedEntryPose(pose) -> ArmTarget.System(SystemPoseMode.CLOSED)
-        GestureThresholds.ENABLE_M1_SWIPE && isHorizontalEntryPose(pose) -> ArmTarget.Swipe(SwipeAxisMode.HORIZONTAL)
-        GestureThresholds.ENABLE_M1_SWIPE && isVerticalEntryPose(pose) -> ArmTarget.Swipe(SwipeAxisMode.VERTICAL)
+        isSystemSpreadEntryPose(pose) -> if (GestureThresholds.ENABLE_M5_SYSTEM) ArmTarget.System(SystemPoseMode.SPREAD) else null
+        isSystemClosedEntryPose(pose) -> if (GestureThresholds.ENABLE_M5_SYSTEM) ArmTarget.System(SystemPoseMode.CLOSED) else null
+        GestureThresholds.ENABLE_M1_HORIZONTAL && isHorizontalEntryPose(pose) -> ArmTarget.Swipe(SwipeAxisMode.HORIZONTAL)
+        GestureThresholds.ENABLE_M1_VERTICAL && isVerticalEntryPose(pose) -> ArmTarget.Swipe(SwipeAxisMode.VERTICAL)
         GestureThresholds.ENABLE_M2_CURSOR && isCursorEntryPose(pose) -> ArmTarget.Cursor
         else -> null
     }
@@ -730,6 +783,133 @@ class GestureStateMachine {
 
         state = s.copy(history = history, fired = true)
         return GestureAction.SystemAction(type)
+    }
+
+    /**
+     * "Nam tay": ca 4 ngon (b,c,d,e) deu gap sat long ban tay - doi lap voi
+     * allFiveUp. Yeu cau nguoi dung 2026-09-22: "qua kho de ghi nhan nam ban
+     * tay lai" - 2 thay doi so voi ban dau:
+     * 1) Bo dieu kien ngon cai (thumb IN) - du lieu do that o cac tu the khac
+     *    (xem comment T_OUT/T_IN trong GestureThresholds) da cho thay goc xoe
+     *    ngon cai KHONG tach biet ro, doi hoi them dieu kien nay chi lam kho
+     *    kich hoat hon ma khong tang do chinh xac bao nhieu - rieng 4 ngon
+     *    kia da du dac trung, khong lan voi bat ky tu the M1/M2/M5 nao khac
+     *    (khong tu the nao khac co CA 4 ngon b,c,d,e deu gap cung luc).
+     * 2) Dung thang gia tri THO (features.rX) voi nguong FIST_R_DOWN rieng,
+     *    KHONG dung pose.b/c/d/e (da qua Voter, doi hoi 4/5 khung dong thuan
+     *    CHO CA 4 Voter doc lap CUNG LUC moi coi la gap) - nam tay that (dac
+     *    biet luc dau ngon tay bi che khuat trong long ban tay) de bi
+     *    MediaPipe doc nhieu hon cac tu the "gap" khac, khien 4 Voter kho
+     *    dong thuan dung luc. Kiem tra truc tiep tung khung don, chap nhan
+     *    doi lay phan hoi nhanh hon thay vi cho vote on dinh.
+     */
+    private fun isFistPose(features: Features): Boolean =
+        features.rB <= GestureThresholds.FIST_R_DOWN &&
+            features.rC <= GestureThresholds.FIST_R_DOWN &&
+            features.rD <= GestureThresholds.FIST_R_DOWN &&
+            features.rE <= GestureThresholds.FIST_R_DOWN
+
+    /**
+     * "Xoe het": doi lap voi isFistPose, cung dung gia tri THO (khong qua
+     * Voter) vi cung ly do - ngay sau khi vua nam tay xong (isFistPose vua
+     * kich hoat tu gia tri tho), pose.allFiveUp (qua Voter) van con "dinh"
+     * UP tu truoc do vai khung, neu dung no de xet "da xoe ra" se huy nham
+     * ngay lap tuc luc vua chuyen sang cho mo lai (WaitingReopenFist). Rieng
+     * cho doan SAU KHI tat man hinh (dung o WaitingReopenFist/WaitingReopenReady),
+     * dung ham nay thay pose.allFiveUp cho nhat quan voi isFistPose.
+     */
+    private fun isOpenPose(features: Features): Boolean =
+        features.rB >= GestureThresholds.R_UP &&
+            features.rC >= GestureThresholds.R_UP &&
+            features.rD >= GestureThresholds.R_UP &&
+            features.rE >= GestureThresholds.R_UP
+
+    /**
+     * M6 (yeu cau nguoi dung 2026-09-22): xoe 5 ngon DUNG YEN du
+     * SCREEN_LOCK_ARM_HOLD_MS (nhu Arming cac che do khac, chong kich hoat
+     * nham) -> hien mau cam (ArmedOff) -> nam tay lai -> phat ScreenOff.
+     * CHI hoat dong khi KHONG dang o M2 (tham so cursorActive, yeu cau ro cua
+     * nguoi dung) va GestureThresholds.ENABLE_M6_SCREEN_OFF = true.
+     *
+     * Sau khi tat: neu ENABLE_SCREEN_OFF_REOPEN_GESTURE = true, tiep tuc theo
+     * doi rieng "nam tay >=SCREEN_OFF_REOPEN_HOLD_MS roi xoe ra" de phat
+     * ScreenOn - phan nay chay BAT KE cursorActive (khong con y nghia luc man
+     * hinh dang bi phu den). ScreenOff/ScreenOn CHI la tin hieu truu tuong -
+     * lop Service (GestureForegroundService) moi quyet dinh dien dich thanh
+     * khoa man hinh that hay phu man den, xem GestureThresholds.ENABLE_SCREEN_OFF_REOPEN_GESTURE.
+     *
+     * Doc lap hoan toan voi `state`/InternalState chinh (khong dung tu the M1/
+     * M2/M5) nen dung 1 sealed class rieng (ScreenLockState), tranh lam phinh
+     * to InternalState voi 1 luong logic khong lien quan.
+     */
+    private fun updateScreenLock(pose: StablePose, features: Features, now: Long, cursorActive: Boolean): GestureAction? {
+        if (!GestureThresholds.ENABLE_M6_SCREEN_OFF) {
+            screenLockState = ScreenLockState.Idle
+            return null
+        }
+        when (val sl = screenLockState) {
+            ScreenLockState.Idle -> {
+                if (!cursorActive && pose.allFiveUp) {
+                    screenLockState = ScreenLockState.ArmingOff(now, features.p)
+                }
+            }
+
+            is ScreenLockState.ArmingOff -> {
+                if (cursorActive || !pose.allFiveUp) {
+                    screenLockState = ScreenLockState.Idle
+                    return null
+                }
+                val displacement = features.p.distanceTo(sl.anchorP) / features.s
+                if (displacement > GestureThresholds.ARM_JITTER) {
+                    screenLockState = ScreenLockState.Idle
+                    return null
+                }
+                if (now - sl.startTimeMs >= GestureThresholds.SCREEN_LOCK_ARM_HOLD_MS) {
+                    screenLockState = ScreenLockState.ArmedOff
+                }
+            }
+
+            ScreenLockState.ArmedOff -> {
+                if (cursorActive) {
+                    screenLockState = ScreenLockState.Idle
+                    return null
+                }
+                if (isFistPose(features)) {
+                    screenLockState = if (GestureThresholds.ENABLE_SCREEN_OFF_REOPEN_GESTURE) {
+                        ScreenLockState.WaitingReopenFist(now)
+                    } else {
+                        ScreenLockState.Idle
+                    }
+                    return GestureAction.ScreenOff
+                }
+                if (!pose.allFiveUp) {
+                    // Roi khoi tu the 5 ngon ma khong phai nam tay (vd ha bot
+                    // 1-2 ngon) -> huy, phai xoe lai tu dau.
+                    screenLockState = ScreenLockState.Idle
+                }
+            }
+
+            is ScreenLockState.WaitingReopenFist -> when {
+                isOpenPose(features) -> screenLockState = ScreenLockState.Idle // xoe qua som, chua du nguong -> huy
+                isFistPose(features) -> {
+                    if (now - sl.fistStartMs >= GestureThresholds.SCREEN_OFF_REOPEN_HOLD_MS) {
+                        screenLockState = ScreenLockState.WaitingReopenReady
+                    }
+                }
+                else -> screenLockState = ScreenLockState.Idle
+            }
+
+            ScreenLockState.WaitingReopenReady -> {
+                if (isOpenPose(features)) {
+                    screenLockState = ScreenLockState.Idle
+                    return GestureAction.ScreenOn
+                }
+                // Van giu tu the nam/trung gian -> tiep tuc cho, khong huy va
+                // khong gioi han thoi gian (yeu cau nguoi dung: "nam tay 0.5s
+                // ROI xoe" - da qua nguong toi thieu, sau do khoan cho tuy y).
+            }
+        }
+        return null
     }
 
     private companion object {

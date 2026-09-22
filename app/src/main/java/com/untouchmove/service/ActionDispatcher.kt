@@ -69,6 +69,14 @@ object ActionDispatcher {
         serviceRef?.get()?.performGlobalAction(action)
     }
 
+    fun showBlackCurtain() {
+        serviceRef?.get()?.showBlackCurtain()
+    }
+
+    fun hideBlackCurtain() {
+        serviceRef?.get()?.hideBlackCurtain()
+    }
+
     fun showStatus(state: DisplayState) {
         serviceRef?.get()?.showStatus(state)
     }

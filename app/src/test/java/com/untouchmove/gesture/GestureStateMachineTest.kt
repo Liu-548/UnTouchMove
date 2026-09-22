@@ -109,18 +109,38 @@ class GestureStateMachineTest {
         return points
     }
 
+    /** Tu the "nam tay" (M6): ca 4 ngon deu gap sat, ngon cai khep. */
+    private fun fistLandmarks(offsetX: Float = 0f, offsetY: Float = 0f): List<Point3D> {
+        fun p(x: Float, y: Float, z: Float = 0f) = Point3D(x + offsetX, y + offsetY, z)
+        val points = MutableList(21) { p(0f, 0f) }
+        points[0] = p(0f, 0f) // co tay
+        points[5] = p(0f, 0f) // mcp tro
+        points[9] = p(0f, 10f) // mcp giua -> S = 10
+        points[13] = p(0f, 0f) // mcp ap ut
+        points[17] = p(0f, 20f) // mcp ut
+        points[4] = p(2f, 0f) // dau ngon cai khep, t=0.2 (IN)
+        points[8] = p(0f, 9f) // dau ngon tro gap, r_b=0.3 (DOWN)
+        points[12] = p(0f, 9f) // dau ngon giua gap, r_c=0.3 (DOWN)
+        points[16] = p(0f, 9f) // dau ngon ap ut gap, r_d=0.3 (DOWN)
+        points[20] = p(0f, 9f) // dau ngon ut gap, r_e=0.3 (DOWN)
+        return points
+    }
+
     private fun frame(landmarks: List<Point3D>, timestampMs: Long) =
         HandFrame(worldLandmarks = landmarks, confidence = 0.95f, timestampMs = timestampMs)
 
     @Test
-    fun `khong kich hoat khi 5 ngon mo`() {
+    fun `khong kich hoat M1-M2-M5 khi 5 ngon mo`() {
         val machine = GestureStateMachine()
         var lastAction: GestureAction? = null
         for (i in 0 until 20) {
             lastAction = machine.onFrame(frame(allFiveUpLandmarks(), i * 50L))
         }
         assertNull(lastAction)
-        assertEquals(DisplayState.NONE, machine.displayState)
+        // KHONG con la NONE: M6 (them 2026-09-22) coi 5 ngon mo la buoc dau
+        // "san sang tat man hinh" - 950ms (20 khung) chua du SCREEN_LOCK_ARM_HOLD_MS
+        // (1000ms) nen dang la ARMING (chua chuyen cam, chua phat hanh dong gi).
+        assertEquals(DisplayState.ARMING, machine.displayState)
     }
 
     @Test
@@ -791,7 +811,11 @@ class GestureStateMachineTest {
             machine.onFrame(frame(allFiveUpLandmarks(), t))
             t += 50L
         }
-        assertEquals(DisplayState.NONE, machine.displayState)
+        // Da roi M2 that (khong con DisplayState.M2). Ket qua la ARMING chu
+        // khong phai NONE vi M6 (them 2026-09-22) coi xoe 5 ngon la buoc dau
+        // "san sang tat man hinh" - 250ms (5 khung) chua du SCREEN_LOCK_ARM_HOLD_MS
+        // (1000ms) nen chua chuyen mau cam, dung DisplayState.ARMING chung.
+        assertEquals(DisplayState.ARMING, machine.displayState)
     }
 
     @Test
@@ -814,9 +838,9 @@ class GestureStateMachineTest {
     }
 
     @Test
-    fun `tat M1 thi tu the vuot khong kich hoat gi ca`() {
-        val original = GestureThresholds.ENABLE_M1_SWIPE
-        GestureThresholds.ENABLE_M1_SWIPE = false
+    fun `tat rieng M1 2 ngon thi tu the Len-Xuong khong kich hoat gi ca`() {
+        val original = GestureThresholds.ENABLE_M1_VERTICAL
+        GestureThresholds.ENABLE_M1_VERTICAL = false
         try {
             val machine = GestureStateMachine()
             var t = 0L
@@ -826,7 +850,71 @@ class GestureStateMachineTest {
             }
             assertEquals(DisplayState.NONE, machine.displayState)
         } finally {
-            GestureThresholds.ENABLE_M1_SWIPE = original
+            GestureThresholds.ENABLE_M1_VERTICAL = original
+        }
+    }
+
+    @Test
+    fun `tat rieng M1 3 ngon thi tu the Trai-Phai khong kich hoat gi ca, 2 ngon van binh thuong`() {
+        val original = GestureThresholds.ENABLE_M1_HORIZONTAL
+        GestureThresholds.ENABLE_M1_HORIZONTAL = false
+        try {
+            val machine = GestureStateMachine()
+            var t = 0L
+            repeat(20) {
+                machine.onFrame(frame(horizontalLandmarks(), t))
+                t += 50L
+            }
+            assertEquals(DisplayState.NONE, machine.displayState)
+
+            machine.onHandLost()
+            repeat(20) {
+                machine.onFrame(frame(m1Landmarks(), t))
+                t += 50L
+            }
+            assertEquals(DisplayState.M1_VERTICAL, machine.displayState)
+        } finally {
+            GestureThresholds.ENABLE_M1_HORIZONTAL = original
+        }
+    }
+
+    /**
+     * Tu the TRUNG GIAN khi tay dang chuyen tu 3 ngon (M1 ngang) sang 4 ngon
+     * (M5): b,c,d nhu horizontalLandmarks nhung dau ngon ut nhich len toi
+     * r_e~0.8 - nam trong "vung xam" cua pose.e THUONG (AMBIGUOUS, giua
+     * R_DOWN=0.65 va R_UP=0.90, KHONG ghi de duoc gia tri DOWN cu con luu
+     * trong Voter) nhung da vuot SYSTEM_E_UP_RELAXED=0.78 nen pose.eUpRelaxed
+     * doc duoc UP ngay. Day chinh la khung hinh gay nham theo bao cao nguoi
+     * dung 2026-09-22.
+     */
+    private fun intermediateThreeToFourFingerLandmarks(offsetX: Float = 0f, offsetY: Float = 0f): List<Point3D> {
+        val points = horizontalLandmarks(offsetX, offsetY).toMutableList()
+        points[20] = Point3D(0f + offsetX, 14f + offsetY, 0f) // r_e~0.8
+        return points
+    }
+
+    @Test
+    fun `tat M5 thi tu the trung gian 3-sang-4-ngon khong duoc nham thanh M1 ngang`() {
+        val original = GestureThresholds.ENABLE_M5_SYSTEM
+        GestureThresholds.ENABLE_M5_SYSTEM = false
+        try {
+            val machine = GestureStateMachine()
+            var t = 0L
+            // On dinh pose.e = DOWN that (dung tu the 3 ngon that truoc), mo
+            // phong nguoi dung vua vay 3 ngon xong.
+            repeat(6) {
+                machine.onFrame(frame(horizontalLandmarks(), t))
+                t += 50L
+            }
+            // Nhich dau ngon ut len vung xam - dang co y dua 4 ngon len (M5,
+            // dang tat) chu khong phai co y giu tu the 3 ngon.
+            repeat(10) {
+                machine.onFrame(frame(intermediateThreeToFourFingerLandmarks(), t))
+                t += 50L
+            }
+            assertEquals(DisplayState.NONE, machine.displayState)
+        } finally {
+            GestureThresholds.ENABLE_M5_SYSTEM = original
         }
     }
 
@@ -992,5 +1080,123 @@ class GestureStateMachineTest {
         val action2 = machine.onFrame(frame(systemSpreadLandmarks(offsetX = 20f), t))
         assertTrue("phai vao lai va vay duoc sau khi huy", action2 is GestureAction.SystemAction)
         assertEquals(GestureAction.SystemActionType.HOME, (action2 as GestureAction.SystemAction).type)
+    }
+
+    // --- M6: xoe 5 ngon dung yen roi nam tay -> tat man hinh (yeu cau nguoi dung 2026-09-22) ---
+
+    @Test
+    fun `xoe 5 ngon duoi 1 giay van la ARMING, qua 1 giay moi chuyen mau cam roi nam tay moi tat man hinh`() {
+        val machine = GestureStateMachine()
+        var t = 0L
+        // Duoi 1000ms (toi 700ms): van la ARMING, chua san sang.
+        repeat(15) {
+            machine.onFrame(frame(allFiveUpLandmarks(), t))
+            t += 50L
+        }
+        assertEquals(DisplayState.ARMING, machine.displayState)
+
+        // Vuot qua 1000ms: chuyen SCREEN_LOCK_ARMED (mau cam, san sang nam tay).
+        repeat(10) {
+            machine.onFrame(frame(allFiveUpLandmarks(), t))
+            t += 50L
+        }
+        assertEquals(DisplayState.SCREEN_LOCK_ARMED, machine.displayState)
+
+        // Nam tay lai (can vai khung de Voter vote lat) -> phat ScreenOff.
+        var action: GestureAction? = null
+        repeat(5) {
+            val a = machine.onFrame(frame(fistLandmarks(), t))
+            if (a != null) action = a
+            t += 50L
+        }
+        assertEquals(GestureAction.ScreenOff, action)
+    }
+
+    @Test
+    fun `tat M6 thi xoe 5 ngon dung yen roi nam tay khong tat man hinh`() {
+        val original = GestureThresholds.ENABLE_M6_SCREEN_OFF
+        GestureThresholds.ENABLE_M6_SCREEN_OFF = false
+        try {
+            val machine = GestureStateMachine()
+            var t = 0L
+            repeat(30) {
+                machine.onFrame(frame(allFiveUpLandmarks(), t))
+                t += 50L
+            }
+            assertEquals(DisplayState.NONE, machine.displayState)
+
+            var action: GestureAction? = null
+            repeat(5) {
+                val a = machine.onFrame(frame(fistLandmarks(), t))
+                if (a != null) action = a
+                t += 50L
+            }
+            assertNull(action)
+        } finally {
+            GestureThresholds.ENABLE_M6_SCREEN_OFF = original
+        }
+    }
+
+    @Test
+    fun `mac dinh tat cong tac mo lai - sau khi tat man hinh xoe 5 ngon lai khong phat ScreenOn`() {
+        assertEquals(false, GestureThresholds.ENABLE_SCREEN_OFF_REOPEN_GESTURE)
+        val machine = GestureStateMachine()
+        var t = 0L
+        repeat(25) {
+            machine.onFrame(frame(allFiveUpLandmarks(), t))
+            t += 50L
+        }
+        var screenOffAction: GestureAction? = null
+        repeat(5) {
+            val a = machine.onFrame(frame(fistLandmarks(), t))
+            if (a != null) screenOffAction = a
+            t += 50L
+        }
+        assertEquals(GestureAction.ScreenOff, screenOffAction)
+
+        var afterAction: GestureAction? = null
+        repeat(10) {
+            val a = machine.onFrame(frame(allFiveUpLandmarks(), t))
+            if (a != null) afterAction = a
+            t += 50L
+        }
+        assertNull(afterAction)
+    }
+
+    @Test
+    fun `bat cong tac mo lai bang cu chi - nam tay du 0,5 giay roi xoe 5 ngon se phat ScreenOn`() {
+        val original = GestureThresholds.ENABLE_SCREEN_OFF_REOPEN_GESTURE
+        GestureThresholds.ENABLE_SCREEN_OFF_REOPEN_GESTURE = true
+        try {
+            val machine = GestureStateMachine()
+            var t = 0L
+            repeat(25) {
+                machine.onFrame(frame(allFiveUpLandmarks(), t))
+                t += 50L
+            }
+            var screenOffAction: GestureAction? = null
+            repeat(5) {
+                val a = machine.onFrame(frame(fistLandmarks(), t))
+                if (a != null) screenOffAction = a
+                t += 50L
+            }
+            assertEquals(GestureAction.ScreenOff, screenOffAction)
+
+            // Giu nam tay them cho qua nguong SCREEN_OFF_REOPEN_HOLD_MS (500ms).
+            repeat(10) {
+                machine.onFrame(frame(fistLandmarks(), t))
+                t += 50L
+            }
+
+            var screenOnAction: GestureAction? = null
+            repeat(5) {
+                val a = machine.onFrame(frame(allFiveUpLandmarks(), t))
+                if (a != null) screenOnAction = a
+                t += 50L
+            }
+            assertEquals(GestureAction.ScreenOn, screenOnAction)
+        } finally {
+            GestureThresholds.ENABLE_SCREEN_OFF_REOPEN_GESTURE = original
+        }
     }
 }

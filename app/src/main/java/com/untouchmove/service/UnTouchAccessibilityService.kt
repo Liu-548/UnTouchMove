@@ -82,6 +82,7 @@ class UnTouchAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         cancelActiveDrag()
         overlayRenderer.hide()
+        overlayRenderer.hideBlackCurtain()
         cursorView.hide()
         ActionDispatcher.detach(this)
         super.onDestroy()
@@ -227,6 +228,16 @@ class UnTouchAccessibilityService : AccessibilityService() {
         val pxX = (metrics.widthPixels / 2f + x * density).coerceIn(0f, metrics.widthPixels.toFloat())
         val pxY = (metrics.heightPixels / 2f + y * density).coerceIn(0f, metrics.heightPixels.toFloat())
         return pxX to pxY
+    }
+
+    /** M6 (yeu cau nguoi dung 2026-09-22): phu man den toan man hinh - xem OverlayRenderer.showBlackCurtain. */
+    fun showBlackCurtain() {
+        overlayRenderer.showBlackCurtain()
+    }
+
+    /** M6 nguoc lai: bo lop man den, tra lai man hinh binh thuong. */
+    fun hideBlackCurtain() {
+        overlayRenderer.hideBlackCurtain()
     }
 
     fun performSwipe(direction: SwipeDirection) {

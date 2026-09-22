@@ -68,4 +68,22 @@ sealed class GestureAction {
     enum class SystemActionType { BACK, RECENTS, HOME, NOTIFICATIONS }
 
     enum class Direction { UP, DOWN, LEFT, RIGHT }
+
+    /**
+     * M6 (yeu cau nguoi dung 2026-09-22): xoe 5 ngon dung yen roi nam tay lai
+     * -> "tat man hinh". Tin hieu TRUU TUONG - lop Service moi quyet dinh
+     * dien dich thanh khoa man hinh THAT (GLOBAL_ACTION_LOCK_SCREEN, giong
+     * bam nut nguon) hay chi PHU 1 LOP MAN DEN che kin (khong khoa/tat gi
+     * that), tuy GestureThresholds.ENABLE_SCREEN_OFF_REOPEN_GESTURE. Ca 2
+     * cach deu KHONG tat app/camera/service - xem GestureForegroundService.dispatch.
+     */
+    object ScreenOff : GestureAction()
+
+    /**
+     * M6 nguoc lai: nam tay >=SCREEN_OFF_REOPEN_HOLD_MS roi xoe 5 ngon ra sau
+     * khi da ScreenOff (CHI phat khi GestureThresholds.ENABLE_SCREEN_OFF_REOPEN_GESTURE
+     * = true, xem GestureStateMachine.updateScreenLock - luc do ScreenOff o
+     * tren la phu man den, khong phai khoa that, nen bo lop den la du "mo lai").
+     */
+    object ScreenOn : GestureAction()
 }

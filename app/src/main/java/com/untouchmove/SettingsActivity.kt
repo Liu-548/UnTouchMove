@@ -76,7 +76,8 @@ private fun SettingsScreen(onBack: () -> Unit) {
 
     var sensUp by remember { mutableFloatStateOf(0.5f) }
     var sensDown by remember { mutableFloatStateOf(0.5f) }
-    var sensLeftRight by remember { mutableFloatStateOf(0.5f) }
+    var sensLeft by remember { mutableFloatStateOf(0.5f) }
+    var sensRight by remember { mutableFloatStateOf(0.5f) }
     var sensHandDetection by remember { mutableFloatStateOf(0.5f) }
     var cooldownMs by remember { mutableFloatStateOf(GestureThresholds.DEFAULT_SWIPE_COOLDOWN_MS.toFloat()) }
     // O nhap so tu do (yeu cau nguoi dung 2026-09-20: can nhan he so con tro
@@ -87,9 +88,12 @@ private fun SettingsScreen(onBack: () -> Unit) {
     var pointingMode by remember { mutableStateOf(false) }
     var sensGOpen by remember { mutableFloatStateOf(0f) }
     var sensSysVelMin by remember { mutableFloatStateOf(0f) }
-    var enableM1 by remember { mutableStateOf(true) }
+    var enableM1Vertical by remember { mutableStateOf(true) }
+    var enableM1Horizontal by remember { mutableStateOf(true) }
     var enableM2 by remember { mutableStateOf(true) }
     var enableM5 by remember { mutableStateOf(true) }
+    var enableM6 by remember { mutableStateOf(true) }
+    var enableScreenOffReopen by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         launch {
@@ -103,12 +107,13 @@ private fun SettingsScreen(onBack: () -> Unit) {
             }
         }
         launch {
-            repository.velLeftRight.collect {
-                sensLeftRight = velocityToSensitivity(
-                    it,
-                    GestureThresholds.MIN_SWIPE_VEL_MIN_LEFT_RIGHT,
-                    GestureThresholds.MAX_SWIPE_VEL_MIN_LEFT_RIGHT,
-                )
+            repository.velLeft.collect {
+                sensLeft = velocityToSensitivity(it, GestureThresholds.MIN_SWIPE_VEL_MIN_LEFT, GestureThresholds.MAX_SWIPE_VEL_MIN_LEFT)
+            }
+        }
+        launch {
+            repository.velRight.collect {
+                sensRight = velocityToSensitivity(it, GestureThresholds.MIN_SWIPE_VEL_MIN_RIGHT, GestureThresholds.MAX_SWIPE_VEL_MIN_RIGHT)
             }
         }
         launch {
@@ -142,9 +147,12 @@ private fun SettingsScreen(onBack: () -> Unit) {
                 sensSysVelMin = velocityToSensitivity(it, GestureThresholds.MIN_SYS_VEL_MIN, GestureThresholds.MAX_SYS_VEL_MIN)
             }
         }
-        launch { repository.enableM1Swipe.collect { enableM1 = it } }
+        launch { repository.enableM1Vertical.collect { enableM1Vertical = it } }
+        launch { repository.enableM1Horizontal.collect { enableM1Horizontal = it } }
         launch { repository.enableM2Cursor.collect { enableM2 = it } }
         launch { repository.enableM5System.collect { enableM5 = it } }
+        launch { repository.enableM6ScreenOff.collect { enableM6 = it } }
+        launch { repository.enableScreenOffReopenGesture.collect { enableScreenOffReopen = it } }
     }
 
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -162,12 +170,21 @@ private fun SettingsScreen(onBack: () -> Unit) {
                 description = "Tắt cử chỉ nào thì tay làm đúng tư thế đó cũng không kích hoạt gì.",
             ) {
                 GestureToggleRow(
-                    label = "Lướt 2/3 ngón",
-                    checked = enableM1,
+                    label = "Lướt 2 ngón (Lên/Xuống)",
+                    checked = enableM1Vertical,
                     onCheckedChange = { checked ->
-                        enableM1 = checked
-                        GestureThresholds.ENABLE_M1_SWIPE = checked
-                        scope.launch { repository.setEnableM1Swipe(checked) }
+                        enableM1Vertical = checked
+                        GestureThresholds.ENABLE_M1_VERTICAL = checked
+                        scope.launch { repository.setEnableM1Vertical(checked) }
+                    },
+                )
+                GestureToggleRow(
+                    label = "Lướt 3 ngón (Trái/Phải)",
+                    checked = enableM1Horizontal,
+                    onCheckedChange = { checked ->
+                        enableM1Horizontal = checked
+                        GestureThresholds.ENABLE_M1_HORIZONTAL = checked
+                        scope.launch { repository.setEnableM1Horizontal(checked) }
                     },
                 )
                 GestureToggleRow(
@@ -188,10 +205,52 @@ private fun SettingsScreen(onBack: () -> Unit) {
                         scope.launch { repository.setEnableM5System(checked) }
                     },
                 )
+                GestureToggleRow(
+                    label = "Xoè 5 ngón rồi nắm tay = tắt màn hình",
+                    checked = enableM6,
+                    onCheckedChange = { checked ->
+                        enableM6 = checked
+                        GestureThresholds.ENABLE_M6_SCREEN_OFF = checked
+                        scope.launch { repository.setEnableM6ScreenOff(checked) }
+                    },
+                )
             }
 
             SettingsSection(
-                title = "Độ nhạy cử chỉ vuốt",
+                title = "Tắt màn hình bằng cử chỉ (thử nghiệm)",
+                description = "Xoè cả 5 ngón, giữ yên 1 giây (icon chuyển màu cam), " +
+                    "rồi nắm tay lại để tắt màn hình. Chỉ tắt màn hình, không tắt " +
+                    "app/camera/thông báo. Không hoạt động khi đang ở chế độ con trỏ.",
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Cho phép mở lại màn hình bằng cử chỉ")
+                        Text(
+                            "TẮT (mặc định): khoá màn hình thật như bấm nút nguồn — " +
+                                "muốn mở lại phải bấm nguồn/vân tay như bình thường. " +
+                                "BẬT: không khoá/tắt gì thật cả, chỉ phủ 1 lớp màn đen che " +
+                                "kín màn hình (camera vẫn chạy bình thường suốt lúc đó) — " +
+                                "nắm tay giữ ít nhất 0,5 giây rồi xoè 5 ngón ra để gỡ lớp " +
+                                "màn đen, xem lại màn hình bình thường.",
+                        )
+                    }
+                    Switch(
+                        checked = enableScreenOffReopen,
+                        onCheckedChange = { checked ->
+                            enableScreenOffReopen = checked
+                            GestureThresholds.ENABLE_SCREEN_OFF_REOPEN_GESTURE = checked
+                            scope.launch { repository.setEnableScreenOffReopenGesture(checked) }
+                        },
+                    )
+                }
+            }
+
+            SettingsSection(
+                title = "Độ nhạy vuốt 2 ngón (Lên / Xuống)",
                 description = "Kéo sang phải = nhạy hơn (chỉ cần vẫy nhẹ là nhận).",
             ) {
                 SensitivitySlider(
@@ -215,18 +274,35 @@ private fun SettingsScreen(onBack: () -> Unit) {
                         scope.launch { repository.setVelDown(v) }
                     },
                 )
+            }
+
+            SettingsSection(
+                title = "Độ nhạy vuốt 3 ngón (Trái / Phải)",
+                description = "Kéo sang phải = nhạy hơn (chỉ cần vẫy nhẹ là nhận).",
+            ) {
                 SensitivitySlider(
-                    label = "Vuốt Trái / Phải (tư thế 3 ngón)",
-                    sensitivity = sensLeftRight,
+                    label = "Vuốt Trái",
+                    sensitivity = sensLeft,
                     onChange = { value ->
-                        sensLeftRight = value
+                        sensLeft = value
+                        val v =
+                            sensitivityToVelocity(value, GestureThresholds.MIN_SWIPE_VEL_MIN_LEFT, GestureThresholds.MAX_SWIPE_VEL_MIN_LEFT)
+                        GestureThresholds.SWIPE_VEL_MIN_LEFT = v
+                        scope.launch { repository.setVelLeft(v) }
+                    },
+                )
+                SensitivitySlider(
+                    label = "Vuốt Phải",
+                    sensitivity = sensRight,
+                    onChange = { value ->
+                        sensRight = value
                         val v = sensitivityToVelocity(
                             value,
-                            GestureThresholds.MIN_SWIPE_VEL_MIN_LEFT_RIGHT,
-                            GestureThresholds.MAX_SWIPE_VEL_MIN_LEFT_RIGHT,
+                            GestureThresholds.MIN_SWIPE_VEL_MIN_RIGHT,
+                            GestureThresholds.MAX_SWIPE_VEL_MIN_RIGHT,
                         )
-                        GestureThresholds.SWIPE_VEL_MIN_LEFT_RIGHT = v
-                        scope.launch { repository.setVelLeftRight(v) }
+                        GestureThresholds.SWIPE_VEL_MIN_RIGHT = v
+                        scope.launch { repository.setVelRight(v) }
                     },
                 )
             }

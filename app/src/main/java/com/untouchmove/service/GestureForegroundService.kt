@@ -86,16 +86,22 @@ class GestureForegroundService : LifecycleService() {
         val repo = SettingsRepository(this)
         lifecycleScope.launch { repo.velUp.collect { GestureThresholds.SWIPE_VEL_MIN_UP = it } }
         lifecycleScope.launch { repo.velDown.collect { GestureThresholds.SWIPE_VEL_MIN_DOWN = it } }
-        lifecycleScope.launch { repo.velLeftRight.collect { GestureThresholds.SWIPE_VEL_MIN_LEFT_RIGHT = it } }
+        lifecycleScope.launch { repo.velLeft.collect { GestureThresholds.SWIPE_VEL_MIN_LEFT = it } }
+        lifecycleScope.launch { repo.velRight.collect { GestureThresholds.SWIPE_VEL_MIN_RIGHT = it } }
         lifecycleScope.launch { repo.swipeCooldownMs.collect { GestureThresholds.SWIPE_COOLDOWN_MS = it } }
         lifecycleScope.launch { repo.cursorGainTranslation.collect { GestureThresholds.CURSOR_GAIN_TRANSLATION = it } }
         lifecycleScope.launch { repo.cursorGainPointing.collect { GestureThresholds.CURSOR_GAIN_POINTING = it } }
         lifecycleScope.launch { repo.cursorPointingMode.collect { GestureThresholds.CURSOR_POINTING_MODE = it } }
         lifecycleScope.launch { repo.gOpen.collect { GestureThresholds.G_OPEN = it } }
         lifecycleScope.launch { repo.sysVelMin.collect { GestureThresholds.SYS_VEL_MIN = it } }
-        lifecycleScope.launch { repo.enableM1Swipe.collect { GestureThresholds.ENABLE_M1_SWIPE = it } }
+        lifecycleScope.launch { repo.enableM1Vertical.collect { GestureThresholds.ENABLE_M1_VERTICAL = it } }
+        lifecycleScope.launch { repo.enableM1Horizontal.collect { GestureThresholds.ENABLE_M1_HORIZONTAL = it } }
         lifecycleScope.launch { repo.enableM2Cursor.collect { GestureThresholds.ENABLE_M2_CURSOR = it } }
         lifecycleScope.launch { repo.enableM5System.collect { GestureThresholds.ENABLE_M5_SYSTEM = it } }
+        lifecycleScope.launch { repo.enableM6ScreenOff.collect { GestureThresholds.ENABLE_M6_SCREEN_OFF = it } }
+        lifecycleScope.launch {
+            repo.enableScreenOffReopenGesture.collect { GestureThresholds.ENABLE_SCREEN_OFF_REOPEN_GESTURE = it }
+        }
         lifecycleScope.launch {
             // Khac voi cac nguong tren: HAND_DETECTION_CONFIDENCE chi doc luc
             // tao HandLandmarker (khong phai moi khung) - phai dong+tao lai
@@ -217,6 +223,20 @@ class GestureForegroundService : LifecycleService() {
             is GestureAction.HoldMove -> ActionDispatcher.holdMove(action.x, action.y)
             GestureAction.HoldEnd -> ActionDispatcher.holdEnd()
             is GestureAction.SystemAction -> ActionDispatcher.globalAction(action.type.toGlobalAction())
+            // M6 (yeu cau nguoi dung 2026-09-22, sua lai sau khi hieu nham
+            // thanh khoa man hinh that): ENABLE_SCREEN_OFF_REOPEN_GESTURE=false
+            // (mac dinh) -> khoa man hinh THAT (GLOBAL_ACTION_LOCK_SCREEN,
+            // giong bam nut nguon, khong mo lai duoc bang cu chi vi camera se
+            // tu tat theo dung CLAUDE.md muc 4.3, xem screenReceiver). =true
+            // -> CHI phu 1 lop man DEN che kin man hinh, KHONG khoa/tat gi
+            // that ca - camera van chay binh thuong xuyen suot, nen bat lai
+            // duoc cu chi mo lai bat ky luc nao, khong can ngoai le camera nao.
+            GestureAction.ScreenOff -> if (GestureThresholds.ENABLE_SCREEN_OFF_REOPEN_GESTURE) {
+                ActionDispatcher.showBlackCurtain()
+            } else {
+                ActionDispatcher.globalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN)
+            }
+            GestureAction.ScreenOn -> ActionDispatcher.hideBlackCurtain()
             null -> Unit
         }
     }

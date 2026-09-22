@@ -1473,3 +1473,33 @@ lại". `isFistPose` đổi 2 chỗ:
 xem có bị NHẬN NHẦM thành nắm tay lúc KHÔNG có ý định đó không (vd tay đang
 thu về/rút ra khỏi khung hình, hoặc lúc chuyển động nhanh qua tư thế nắm hờ)
 - ngưỡng `FIST_R_DOWN=0.80` là số đoán, chưa có dữ liệu đo thật.
+
+## 2026-09-22 (5) — Thiết lập ký bản release
+
+**Yêu cầu người dùng**: "push lên, nhớ làm bản release mới". Project trước đó
+chưa từng build được `assembleRelease` cài lên máy được (chưa có
+`signingConfig` nào, `.gitignore` đã có sẵn dòng `*.jks`/`keystore.properties`
+từ trước nhưng chưa ai tạo file thật).
+
+**Đã làm**:
+- Tạo keystore cá nhân `untouchmove-release.jks` (RSA 2048, hạn 10000 ngày,
+  `keytool` từ JDK có sẵn trên máy) + `keystore.properties` ở gốc repo (mật
+  khẩu random 24 ký tự) - **CẢ HAI ĐỀU KHÔNG COMMIT** (đã có sẵn trong
+  `.gitignore`), chỉ tồn tại trên máy này.
+- `app/build.gradle.kts`: đọc `keystore.properties` (nếu có) để tạo
+  `signingConfigs.release`, gán vào `buildTypes.release.signingConfig`. Nếu
+  file không tồn tại (vd máy khác chưa có keystore) thì build release vẫn
+  chạy được, chỉ là APK không ký - không làm hỏng build trên máy khác.
+- Gặp lỗi `lintVitalAnalyzeRelease` crash (thông báo lỗi chỉ có
+  `25.0.4.1`, không phải lỗi code) - do bản JDK 25 đang cài trên máy này chưa
+  tương thích với công cụ lint của AGP. Tắt `lint { checkReleaseBuilds = false }`
+  - đây là lỗi CÔNG CỤ (JDK/AGP), không phải chất lượng code, vẫn chạy
+  `./gradlew lint` riêng được nếu cần kiểm tra sau.
+**Quan trọng - CẦN NGƯỜI DÙNG BIẾT**: keystore này chỉ tồn tại trên máy hiện
+tại, KHÔNG có bản sao lưu nào khác. Nếu dự định phát hành lên Play Store sau
+này, **phải tự sao lưu `untouchmove-release.jks` + `keystore.properties` ra
+nơi an toàn** (mất file này = không bao giờ ký cập nhật được cho app đã phát
+hành bằng key này nữa, Play Store không cho đổi key giữa chừng). Hiện tại
+chưa phát hành gì nên rủi ro thấp, nhưng nên sao lưu sớm nếu định dùng lâu dài.
+**Chưa làm**: chưa tăng `versionCode`/`versionName` (vẫn `1`/`"0.1"` như cũ) -
+không có yêu cầu cụ thể về số phiên bản, để nguyên cho tới khi có yêu cầu rõ.

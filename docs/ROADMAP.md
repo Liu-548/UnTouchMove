@@ -326,7 +326,12 @@ nguyên hành vi cũ (0.375), người dùng tự kéo để tăng nhạy. Chi t
       nhóm đó nữa (`GestureThresholds.ENABLE_M1_SWIPE/ENABLE_M2_CURSOR/
       ENABLE_M5_SYSTEM`). "Tay thuận" **chưa làm** — SPEC chỉ dùng tay thuận
       để chọn `numHands`, không ảnh hưởng logic cử chỉ, tách để làm sau.
-- [ ] README đầy đủ, LICENSE, push lên Git
+- [ ] README đầy đủ, LICENSE (đã push code lên Git thường xuyên, còn thiếu
+      README đầy đủ + LICENSE)
+- [x] Thiết lập ký bản release (2026-09-22): `signingConfigs.release` đọc
+      keystore cá nhân qua `keystore.properties` (không commit), `assembleRelease`
+      giờ cài lên máy được. Xem `docs/DECISIONS.md` mục "Thiết lập ký bản
+      release" - có lưu ý quan trọng về sao lưu keystore.
 
 **Cập nhật 2026-09-20**: người dùng yêu cầu "làm giao diện trông đẹp (tối
 giản, dễ dùng), làm thêm cả hdsd". Trong lúc làm, phát hiện + sửa 1 lỗi thật

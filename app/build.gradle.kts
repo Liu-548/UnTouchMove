@@ -1,7 +1,20 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+}
+
+// Ky ban release bang keystore rieng (KHONG commit - xem .gitignore
+// *.jks/keystore.properties). File nay chua co tren may nao khac ngoai may
+// tao ra no; build release tren may khac se ra APK khong ky cho toi khi copy
+// keystore.properties + file .jks tuong ung qua (xem DECISIONS.md).
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        keystorePropertiesFile.inputStream().use { load(it) }
+    }
 }
 
 android {
@@ -16,9 +29,23 @@ android {
         versionName = "0.1"
     }
 
+    signingConfigs {
+        if (keystorePropertiesFile.exists()) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
@@ -31,6 +58,14 @@ android {
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
+    }
+
+    // lintVitalRelease crash tren JDK 25 dang dung tren may nay (loi noi bo
+    // cua lint, khong phai loi code) - tat lint bat buoc luc build release,
+    // khong lien quan gi den chat luong code. Van co the chay `./gradlew lint`
+    // rieng tay neu can kiem tra.
+    lint {
+        checkReleaseBuilds = false
     }
 
     buildFeatures {

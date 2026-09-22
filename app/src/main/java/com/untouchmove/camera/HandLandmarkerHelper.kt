@@ -57,7 +57,13 @@ class HandLandmarkerHelper(
                         .build()
                 )
                 .setRunningMode(RunningMode.LIVE_STREAM)
-                .setNumHands(1)
+                // Nhan toi da 2 tay (yeu cau nguoi dung 2026-09-22: doi khi co
+                // 2 tay lot vao khung hinh cung luc) - van CHI xu ly cu chi tren
+                // 1 tay duy nhat (khong phai nhan dien 2 tay, muc 8 CLAUDE.md
+                // van hoan), chi la chon dung tay chinh trong so cac tay MediaPipe
+                // thay duoc thay vi luon lay tay dau tien MediaPipe tra ve. Xem
+                // selectPrimaryHandIndex ben duoi.
+                .setNumHands(MAX_CANDIDATE_HANDS)
                 // Doc luc tao (khong phai moi khung) - doi luc dang chay phai dong
                 // + tao lai HandLandmarkerHelper moi ap dung duoc gia tri moi
                 // (xem GestureThresholds.HAND_DETECTION_CONFIDENCE va
@@ -111,9 +117,10 @@ class HandLandmarkerHelper(
             return
         }
 
-        val world = worldHands[0].map { Point3D(it.x(), it.y(), it.z()) }
-        val normalized = normalizedHands[0].map { Point3D(it.x(), it.y(), it.z()) }
-        val confidence = result.handedness().getOrNull(0)?.getOrNull(0)?.score() ?: 0f
+        val primaryIndex = selectPrimaryHandIndex(normalizedHands)
+        val world = worldHands[primaryIndex].map { Point3D(it.x(), it.y(), it.z()) }
+        val normalized = normalizedHands[primaryIndex].map { Point3D(it.x(), it.y(), it.z()) }
+        val confidence = result.handedness().getOrNull(primaryIndex)?.getOrNull(0)?.score() ?: 0f
         val inferenceMs = SystemClock.uptimeMillis() - lastInferenceStartMs
 
         onResult(
@@ -123,6 +130,21 @@ class HandLandmarkerHelper(
         )
     }
 
+    // Chon tay "chinh" khi co nhieu tay trong khung hinh: tay co khung bao
+    // (bounding box) lon nhat theo toa do normalized (0..1). Tay cang gan
+    // camera truoc thi cang chiem nhieu dien tich khung hinh, nen day dong
+    // thoi la tay "lon nhat" va tay "gan man hinh nhat" ma nguoi dung mo ta -
+    // khong can uoc luong khoang cach that (khong co do sau tin cay tu 1
+    // camera RGB), 1 phep do la du.
+    private fun selectPrimaryHandIndex(hands: List<List<com.google.mediapipe.tasks.components.containers.NormalizedLandmark>>): Int {
+        if (hands.size <= 1) return 0
+        return hands.indices.maxBy { i ->
+            val xs = hands[i].map { it.x() }
+            val ys = hands[i].map { it.y() }
+            (xs.max() - xs.min()) * (ys.max() - ys.min())
+        }
+    }
+
     fun close() {
         handLandmarker.close()
     }
@@ -130,5 +152,6 @@ class HandLandmarkerHelper(
     private companion object {
         const val MODEL_ASSET_PATH = "hand_landmarker.task"
         const val TAG = "HandLandmarkerHelper"
+        const val MAX_CANDIDATE_HANDS = 2
     }
 }

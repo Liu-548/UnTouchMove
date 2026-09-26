@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
@@ -35,7 +36,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
+import com.untouchmove.ui.ScreenSurface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.text.style.TextAlign
@@ -71,9 +72,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
             UnTouchTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
+                ScreenSurface() {
                     CameraPermissionGate()
                 }
             }
@@ -191,11 +193,10 @@ private fun MainScreen(hasNotificationPermission: Boolean) {
 
             Button(
                 onClick = {
-                    val intent = Intent(context, GestureForegroundService::class.java)
                     if (running) {
-                        context.stopService(intent)
+                        context.stopService(Intent(context, GestureForegroundService::class.java))
                     } else {
-                        ContextCompat.startForegroundService(context, intent)
+                        GestureForegroundService.requestStart(context)
                     }
                 },
                 shape = CircleShape,

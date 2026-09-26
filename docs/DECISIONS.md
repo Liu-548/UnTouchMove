@@ -1503,3 +1503,17 @@ hành bằng key này nữa, Play Store không cho đổi key giữa chừng). H
 chưa phát hành gì nên rủi ro thấp, nhưng nên sao lưu sớm nếu định dùng lâu dài.
 **Chưa làm**: chưa tăng `versionCode`/`versionName` (vẫn `1`/`"0.1"` như cũ) -
 không có yêu cầu cụ thể về số phiên bản, để nguyên cho tới khi có yêu cầu rõ.
+
+## 2026-09-25 — Bắt buộc Trợ năng khi bật, Quick Settings Tile, fit màn hình
+
+**Yêu cầu người dùng**: (1) bấm Bật mà chưa cấp Trợ năng thì đẩy thẳng sang cài
+đặt Trợ năng; (2) thêm nút ở Quick Settings; (3) app chưa vừa màn hình.
+
+- `GestureForegroundService.requestStart()` là điểm bật duy nhất (nút trong app +
+  Tile): thiếu Trợ năng thì báo Toast và mở `ACTION_ACCESSIBILITY_SETTINGS`.
+- Tile bật qua `QuickStartActivity` (trong suốt, `noHistory`) đúng ARCHITECTURE
+  mục 5 vì camera FGS không được tạo từ nền trên Android 14+. Tắt thì Tile dừng
+  service trực tiếp. Trạng thái Tile cập nhật mỗi lần kéo thanh thông báo xuống.
+- Fit màn hình: targetSdk 36 nên Android 15+ ép vẽ tràn viền, nội dung bị đè dưới
+  thanh trạng thái/lỗ camera/thanh điều hướng. Thêm `enableEdgeToEdge()` cho 5
+  Activity + `ScreenSurface` (`safeDrawingPadding`) trong `UnTouchTheme.kt`.

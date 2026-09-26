@@ -1,6 +1,11 @@
 package com.untouchmove.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
@@ -69,4 +74,16 @@ fun UnTouchTheme(content: @Composable () -> Unit) {
         shapes = UnTouchShapes,
         content = content,
     )
+}
+
+/**
+ * Nen toan man hinh + chua phan noi dung khoi thanh trang thai / thanh dieu
+ * huong / lo camera. Android 15+ (targetSdk 35+) ep ve tran vien, neu khong
+ * chua thi noi dung bi de len cac thanh he thong.
+ */
+@Composable
+fun ScreenSurface(content: @Composable () -> Unit) {
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        Box(modifier = Modifier.safeDrawingPadding()) { content() }
+    }
 }

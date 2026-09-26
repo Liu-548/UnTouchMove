@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="60"
+    android:viewportHeight="60">
+    <!-- Cung hinh voi ic_launcher_foreground nhung cat sat vao logo cho to ro tren o Quick Settings. -->
+    <group android:translateX="-24" android:translateY="-20">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M42,33 A5,5 0 0 1 52,33 L52,61 A5,5 0 0 1 42,61 L42,33 Z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M56,29 A5,5 0 0 1 66,29 L66,61 A5,5 0 0 1 56,61 L56,29 Z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M44,62 H64 A8,8 0 0 1 72,70 V76 A8,8 0 0 1 64,84 H44 A8,8 0 0 1 36,76 V70 A8,8 0 0 1 44,62 Z" />
+    </group>
+</vector>

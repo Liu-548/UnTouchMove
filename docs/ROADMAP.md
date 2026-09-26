@@ -317,7 +317,7 @@ nguyên hành vi cũ (0.375), người dùng tự kéo để tăng nhạy. Chi t
       đổi sang tiếng Việt có dấu đầy đủ (yêu cầu người dùng 2026-09-20) -
       trước đó dùng tiếng Việt không dấu; comment trong code vẫn giữ không
       dấu theo quy ước cũ của cả dự án, chỉ đổi phần người dùng nhìn thấy
-- [ ] Quick Settings Tile + `LauncherProxyActivity`, test trên cả hai máy
+- [x] Quick Settings Tile (`tile/UnTouchTileService` + `tile/QuickStartActivity` trong suốt) — code xong 2026-09-25, **chưa test trên máy thật**
 - [x] Cài đặt: bật/tắt từng nhóm cử chỉ (M1 Lướt / M2 Con trỏ / M5 Hệ thống 4
       ngón) — 3 công tắc mới trong `SettingsActivity`, lưu qua
       `SettingsRepository` (DataStore), áp dụng ngay cho

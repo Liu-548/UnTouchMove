@@ -10,7 +10,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ServiceInfo
+import android.provider.Settings
 import android.util.Log
+import android.widget.Toast
 import android.util.Size
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -21,6 +23,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
+import com.untouchmove.R
 import com.untouchmove.camera.HandLandmarkerHelper
 import com.untouchmove.data.SettingsRepository
 import com.untouchmove.gesture.DisplayState
@@ -299,5 +302,22 @@ class GestureForegroundService : LifecycleService() {
 
         var isRunning: Boolean = false
             private set
+
+        /**
+         * Diem vao DUY NHAT de bat tu UI/Tile: bat buoc phai co Tro nang, chua co
+         * thi day sang cai dat Tro nang thay vi chay camera vo nghia (yeu cau
+         * nguoi dung 2026-09-25). Tra ve true neu da bat service.
+         */
+        fun requestStart(context: Context): Boolean {
+            if (!ActionDispatcher.isConnected) {
+                Toast.makeText(context, R.string.accessibility_required, Toast.LENGTH_LONG).show()
+                context.startActivity(
+                    Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                )
+                return false
+            }
+            ContextCompat.startForegroundService(context, Intent(context, GestureForegroundService::class.java))
+            return true
+        }
     }
 }

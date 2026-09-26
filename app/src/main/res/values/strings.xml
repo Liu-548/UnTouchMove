@@ -2,4 +2,6 @@
     <string name="app_name">UnTouchMove</string>
     <string name="camera_permission_rationale">Cần quyền camera để xem trước và nhận diện cử chỉ tay.</string>
     <string name="accessibility_service_description">UnTouchMove dùng dịch vụ này để gửi cử chỉ chạm (vuốt, chạm, kéo) thay cho tay bạn khi bạn bật tính năng điều khiển không chạm. Không đọc nội dung màn hình, không thu thập dữ liệu.</string>
+    <string name="tile_label">Không chạm</string>
+    <string name="accessibility_required">Hãy bật UnTouchMove trong Trợ năng rồi quay lại bấm Bật.</string>
 </resources>
